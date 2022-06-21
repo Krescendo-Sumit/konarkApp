@@ -1,0 +1,65 @@
+<resources>
+    <string name="app_name">Konark CRM</string>
+    <string name="title_activity_main">Konark CRM</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Username</string>
+    <string name="nav_header_subtitle">username@konark.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Force Upload</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+    <string name="menu_tools">Tools</string>
+    <string name="menu_share">Share</string>
+    <string name="menu_send">Send</string>
+    <string name="log_off">Log off</string>
+    <string name="my_profile">My Profile</string>
+    <string name="visit_checkin">Visit Check-In</string>
+
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="btnlbllogin">Login</string>
+    <string name="hitspassord">Password</string>
+    <string name="hitsusername">Username</string>
+    <string name="custumer_checkin">Visit Check-In</string>
+    <string name="lblselectcustomer">Select customer</string>
+    <string name="lbladdcustomer">Add new customer</string>
+    <string name="check_in">Check-In</string>
+    <string name="visit_checkout">Visit Check-Out</string>
+    <string name="new_hint_text">New Customer</string>
+    <string name="check_out">Check-Out</string>
+    <string name="custumer_checkout">Visit Check-out</string>
+    <string name="network_err_message">Network error. try again</string>
+    <string name="dialog_header">Konark CRM</string>
+    <string name="check_in_success">Check in Success!</string>
+    <string name="check_out_success">Checkout Success!</string>
+    <string name="add_customer_success">Customer added Successfully!</string>
+    <string name="i_agree">I Agree</string>
+    <string name="tnc">Conditions of Use
+
+Welcome to our online store! Konark and its associates provide their services to you subject to the following conditions. If you visit or shop within this website, you accept these conditions. Please read them carefully. ?
+PRIVACY
+
+Please review our Privacy Notice, which also governs your visit to our website, to understand our practices.
+ELECTRONIC COMMUNICATIONS
+
+When you visit Konark or send e-mails to us, you are communicating with us electronically. You consent to receive communications from us electronically. We will communicate with you by e-mail or by posting notices on this site. You agree that all agreements, notices, disclosures and other communications that we provide to you electronically satisfy any legal requirement that such communications be in writing.
+COPYRIGHT
+
+All content included on this site, such as text, graphics, logos, button icons, images, audio clips, digital downloads, data compilations, and software, is the property of Konark or its content suppliers and protected by international copyright laws. The compilation of all content on this site is the exclusive property of Konark, with copyright authorship for this collection by Konark, and protected by international copyright laws.
+TRADE MARKS
+
+Konarks trademarks and trade dress may not be used in connection with any product or service that is not Konarks, in any manner that is likely to cause confusion among customers, or in any manner that disparages or discredits Konark. All other trademarks not owned by Konark or its subsidiaries that appear on this site are the property of their respective owners, who may or may not be affiliated with, connected to, or sponsored by Konark or its subsidiaries.</string>
+    <string name="add_customer">Add Customer</string>
+    <string name="add">Add</string>
+
+    <string name="service_notification_title_template">Alert: %1$s</string>
+
+    <!-- TODO: remove this placeholder text -->
+    <string name="service_notification_placeholder_text_template">Your device GPS is off
+    </string>
+    <string name="action_about">About us</string>
+</resources>

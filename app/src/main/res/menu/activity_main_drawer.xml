@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_home"
+            android:title="@string/menu_home" />
+        <item
+            android:id="@+id/nav_myProfile"
+            android:icon="@drawable/ic_profile"
+            android:title="@string/my_profile" />
+
+
+    </group>
+
+    <item android:title="Visit">
+        <menu>
+            <item
+                android:id="@+id/nav_checkIn"
+                android:icon="@drawable/ic_check_in"
+                android:title="@string/visit_checkin" />
+            <item
+                android:id="@+id/nav_checkout"
+                android:icon="@drawable/ic_check_out"
+                android:title="@string/visit_checkout" />
+            <item
+                android:id="@+id/nav_add_ustomer"
+                android:icon="@drawable/ic_plus"
+                android:title="@string/add_customer" />
+        </menu>
+    </item>
+    <item android:title="Order">
+        <menu>
+            <item
+                android:id="@+id/nav_create_order"
+                android:icon="@drawable/ic_check_in"
+                android:title="Create Order" />
+            <item
+                android:id="@+id/nav_view_order"
+                android:icon="@drawable/ic_check_out"
+                android:title="View Order" />
+
+            <item
+                android:id="@+id/nav_view_offline_order"
+                android:icon="@drawable/ic_menu_manage"
+                android:title="Offline Order" />
+
+        </menu>
+    </item>
+
+    <item android:title="Settings">
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@drawable/ic_logout"
+                android:title="@string/log_off" />
+        </menu>
+    </item>
+
+</menu>
