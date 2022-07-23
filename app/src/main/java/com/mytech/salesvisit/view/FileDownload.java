@@ -102,7 +102,7 @@ public class FileDownload extends AppCompatActivity {
             String tbl = "";
             try {
                // Toast.makeText(context, "http://crm.konarkgroup.com:82/Order/DownloadFile?fileName="+fname, Toast.LENGTH_SHORT).show();
-                String data = "<html><body><br><br><br><br><center><a href='http://crm.konarkgroup.com:82/Uploads/Order/"+fname+"' style='font-size:20px;'> Download File </a></center></body></html>";
+                String data = "<html><body><br><br><br><br><center><a href='"+Constants.BASE_URL_upload+fname.replace(" ","%20")+"' style='font-size:20px;'> Download File </a></center></body></html>";
                 Log.i("Data",data);
                 web.loadData(data, "text/html", "UTF-8");
               //  web.loadUrl();

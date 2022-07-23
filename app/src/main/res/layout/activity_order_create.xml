@@ -273,7 +273,7 @@
                     android:id="@+id/textView13"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="SalesPerson" />
+                    android:text="Salesperson" />
 
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
@@ -288,7 +288,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:drawableRight="@drawable/ic_baseline_arrow_drop_down_24"
-                        android:text="Select Sales Person" />
+                        android:text="Select Salesperson" />
 
                     <com.toptoche.searchablespinnerlibrary.SearchableSpinner
                         android:id="@+id/sp_salesperson"

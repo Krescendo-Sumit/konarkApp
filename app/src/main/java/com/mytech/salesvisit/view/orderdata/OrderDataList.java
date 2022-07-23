@@ -47,6 +47,7 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
     User user;
     String username;
     int usercode;
+    String UserType="OO";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,7 +86,7 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
             jsonObject.addProperty("PageSize", 10);
             JsonObject json = new JsonObject();
             json.addProperty("CurrentUser", usercode);
-            json.addProperty("UserType", "OO");
+            json.addProperty("UserType", UserType);
             jsonObject.add("EntityFilter", json);
             orderDataAPI.getOrderData(jsonObject);
         }catch (Exception e)
@@ -108,7 +109,7 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
                      jsonObject.addProperty("PageSize", 10);
                      JsonObject json = new JsonObject();
                      json.addProperty("CurrentUser", usercode);
-                     json.addProperty("UserType", "OO");
+                     json.addProperty("UserType", UserType);
                      jsonObject.add("EntityFilter", json);
                      orderDataAPI.getOrderData(jsonObject);
                      page+=1;
@@ -144,14 +145,15 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
     public void myorders(View v)
     {
         try{
+            rc_orderdata.setAdapter(null);
             page=1;
             jsonObject=new JsonObject();
-
+            UserType="OO";
             jsonObject.addProperty("PageIndex", 1);
             jsonObject.addProperty("PageSize", 10);
             JsonObject json = new JsonObject();
             json.addProperty("CurrentUser", usercode);
-            json.addProperty("UserType", "OO");
+            json.addProperty("UserType", UserType);
             jsonObject.add("EntityFilter", json);
             orderDataAPI.getOrderData(jsonObject);
         }catch (Exception e)
@@ -164,13 +166,14 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
 
         try{
             page=1;
+            rc_orderdata.setAdapter(null);
             jsonObject=new JsonObject();
-
+            UserType="TO";
             jsonObject.addProperty("PageIndex", 1);
             jsonObject.addProperty("PageSize", 10);
             JsonObject json = new JsonObject();
             json.addProperty("CurrentUser", usercode);
-            json.addProperty("UserType", "TO");
+            json.addProperty("UserType", UserType);
             jsonObject.add("EntityFilter", json);
             orderDataAPI.getOrderData(jsonObject);
         }catch (Exception e)

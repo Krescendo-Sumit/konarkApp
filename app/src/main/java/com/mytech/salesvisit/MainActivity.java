@@ -3,6 +3,7 @@ package com.mytech.salesvisit;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -14,6 +15,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -25,7 +27,9 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -70,6 +74,8 @@ import com.mytech.salesvisit.ui.CheckinFragment;
 import com.mytech.salesvisit.ui.HomeFragment;
 import com.mytech.salesvisit.ui.LoginFragment;
 import com.mytech.salesvisit.ui.ProfileFragment;
+import com.mytech.salesvisit.ui.checkin.CheckinAPI;
+import com.mytech.salesvisit.ui.checkin.ResultOutput;
 import com.mytech.salesvisit.util.AppConfig;
 import com.mytech.salesvisit.util.DbUtil;
 import com.mytech.salesvisit.util.JobUtil;
@@ -87,7 +93,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, ActivityCallback, View.OnClickListener {
+        implements NavigationView.OnNavigationItemSelectedListener, ActivityCallback, View.OnClickListener , ResultOutput {
     private static final String TAG = "MainActivity";
     private static final int PERMISSION_REQUESTS = 1;
     private static final int REQUEST_CHECK_SETTINGS = 7;
@@ -103,6 +109,7 @@ public class MainActivity extends AppCompatActivity
     private ForegroundLocationService mService;
     private boolean mBound;
     private Location mLocation;
+    CheckinAPI checkinAPI;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,6 +139,8 @@ public class MainActivity extends AppCompatActivity
         db = AppDatabase.getInstance(getApplicationContext());
         showLogin(savedInstanceState);
         init();
+        checkinAPI=new CheckinAPI(MainActivity.this,this);
+        checkinAPI.getVersionCode();
     }
 
     private void init() {
@@ -676,4 +685,62 @@ public class MainActivity extends AppCompatActivity
         super.onPause();
         unregisterReceiver(gpsLocationReceiver);
     }
+
+    @Override
+    public void onListResponce_Customer(List result) {
+
+    }
+
+    @Override
+    public void onVersionResponse(String result) {
+
+        try {
+            String vname = BuildConfig.VERSION_NAME;
+            String version=result.replace("\"","").trim();
+            if (!version.equals(vname.trim()))
+            {
+                Log.i("Result","New Vesrion "+vname +" "+version);
+                Toast.makeText(MainActivity.this, "New Version available : "+version, Toast.LENGTH_SHORT).show();
+
+                Dialog dialog=new Dialog(MainActivity.this);
+                dialog.setContentView(R.layout.version_update);
+                Button btn_cancel,btn_update;
+
+                btn_cancel=dialog.findViewById(R.id.btncancel);
+                btn_update=dialog.findViewById(R.id.btnupdate);
+                btn_cancel.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        dialog.dismiss();
+                        finish();
+                    }
+                });
+
+                btn_update.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        dialog.dismiss();
+                        //Toast.makeText(MainActivity.this, ""+getPackageName(), Toast.LENGTH_SHORT).show();
+                        String appPackageName = getPackageName(); // package name of the app
+                        try {
+
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+                        } catch (android.content.ActivityNotFoundException anfe) {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+                        }
+                        finish();
+                    }
+                });
+
+
+                dialog.show();
+
+            }
+
+
+       }catch(Exception e)
+        {
+
+        }
+        }
 }

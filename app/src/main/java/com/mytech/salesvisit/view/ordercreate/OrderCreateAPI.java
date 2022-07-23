@@ -192,6 +192,7 @@ Log.i("Error is",e.getMessage());
                     if (response.body() != null) {
                         List<ContactModel> videos = response.body();
                         try {
+
                             resultOutput.onListResponce_Contact(videos);
                         } catch (NullPointerException e) {
                             Toast.makeText(context, "Error is 1 " + e.getMessage()+videos.toString(), Toast.LENGTH_SHORT).show();
@@ -555,7 +556,7 @@ Log.i("Error is",e.getMessage());
 
             JsonObject jsonObject_appinfo = new JsonObject();
             jsonObject_appinfo.addProperty("Name", "Mobile");
-            jsonObject_appinfo.addProperty("Version", "V" + BuildConfig.VERSION_CODE);
+            jsonObject_appinfo.addProperty("Version", "V" + BuildConfig.VERSION_NAME);
             jsonObject.add("AppInfo", jsonObject_appinfo);
 
             Log.i("Json Data :",jsonObject.toString().trim());
@@ -734,7 +735,7 @@ Log.i("Error is",e.getMessage());
 
         JsonObject jsonObject_appinfo=new JsonObject();
         jsonObject_appinfo.addProperty("Name","Mobile");
-        jsonObject_appinfo.addProperty("Version", "V"+BuildConfig.VERSION_CODE);
+        jsonObject_appinfo.addProperty("Version", "V"+BuildConfig.VERSION_NAME);
         jsonObject.add("AppInfo",jsonObject_appinfo);
 
 

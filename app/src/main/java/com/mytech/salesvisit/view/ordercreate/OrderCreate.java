@@ -1,20 +1,36 @@
 package com.mytech.salesvisit.view.ordercreate;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.Manifest;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.icu.lang.UCharacter;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.StrictMode;
+import android.provider.DocumentsContract;
+import android.service.carrier.CarrierMessagingService;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -36,7 +52,14 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.JsonObject;
+//import com.jaiselrahman.filepicker.activity.FilePickerActivity;
+//import com.jaiselrahman.filepicker.config.Configurations;
+//import com.jaiselrahman.filepicker.model.MediaFile;
+import com.jaiselrahman.filepicker.activity.FilePickerActivity;
+import com.jaiselrahman.filepicker.config.Configurations;
+import com.jaiselrahman.filepicker.model.MediaFile;
 import com.mytech.salesvisit.R;
 import com.mytech.salesvisit.adapter.CustomerAdapter;
 import com.mytech.salesvisit.adapter.DispatchAdapter;
@@ -58,12 +81,15 @@ import com.mytech.salesvisit.model.ProductItems;
 import com.mytech.salesvisit.model.ProductModel;
 import com.mytech.salesvisit.model.TermConditionItems;
 import com.mytech.salesvisit.model.UOMMOdel;
+import com.mytech.salesvisit.util.Constants;
 import com.mytech.salesvisit.util.MessageBox;
+import com.mytech.salesvisit.util.MultipartUtility;
+import com.mytech.salesvisit.util.PathUtil;
 import com.mytech.salesvisit.util.RetrofitClient;
 import com.mytech.salesvisit.util.SqlightDatabaseUtil;
 import com.mytech.salesvisit.view.FileDownload;
 import com.mytech.salesvisit.view.orderdata.OrderDataList;
-import com.obsez.android.lib.filechooser.ChooserDialog;
+
 import com.toptoche.searchablespinnerlibrary.SearchableListDialog;
 import com.toptoche.searchablespinnerlibrary.SearchableSpinner;
 import com.vansuita.pickimage.bean.PickResult;
@@ -72,15 +98,21 @@ import com.vansuita.pickimage.dialog.PickImageDialog;
 import com.vansuita.pickimage.enums.EPickType;
 import com.vansuita.pickimage.listeners.IPickResult;
 
+
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
+
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -89,9 +121,14 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static android.Manifest.permission_group.CAMERA;
+
 //82  website      83 API
 
-public class OrderCreate extends AppCompatActivity implements ResultOutput,CustomerAdapter.EventListener,ProductAdapter.EventListener,DispatchAdapter.EventListener,ThirdPartyAdapter.EventListener,SalesPersonAdapter.EventListener, IPickResult {
+public class OrderCreate extends AppCompatActivity implements ResultOutput, CustomerAdapter.EventListener, ProductAdapter.EventListener, DispatchAdapter.EventListener, ThirdPartyAdapter.EventListener, SalesPersonAdapter.EventListener, IPickResult {
     OrderCreateAPI api;
     Context context;
     JSONObject jsonObject;
@@ -107,16 +144,16 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput,Custo
     List<OrderCategoryModel> lst_OrderCategory;
     List<ProductModel> lst_Product;
     List<UOMMOdel> lst_UOM;
-    String file_path="";
-
+    String file_path = "";
+    Intent intent;
     SearchableSpinner sp_ordertype, sp_customer, sp_givenby, sp_followup_with, sp_deliveryaddress, sp_billingaddress, sp_isthird_party, sp_dispatch_from, sp_sales_person, sp_ordercategory, sp_product, sp_uom;
     JsonObject customer_JsonObject, product_JsonObject;
-    TextView txt_add,txt_customername,txt_product,txt_dispatchfrom,txt_isthirdparty,txt_sales_person;
+    TextView txt_add, txt_customername, txt_product, txt_dispatchfrom, txt_isthirdparty, txt_sales_person;
     EditText et_qty, et_specification, et_rate, et_tot_amt;
     String str_qty, str_specification, str_rate, str_tot_amt, str_product, str_uom, strproductname, str_uomname;
-    TableLayout tbl_grid,tbl_grid_terms;
+    TableLayout tbl_grid, tbl_grid_terms;
     Button btn_order_create;
-    RecyclerView rc_customer,rc_product,rc_dispatch,rc_thirdparty,rc_salesperson;
+    RecyclerView rc_customer, rc_product, rc_dispatch, rc_thirdparty, rc_salesperson;
     LinearLayoutManager mManager;
     LinearLayout ll_attachment;
     // Terms and Condition
@@ -126,7 +163,7 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput,Custo
     TextView txt_add_terms;
 
     ArrayAdapter adapter_terms_perticular;
-    String[] perticular={"Select","Delivery","Payment","Freight","Price","Taxes"};
+    String[] perticular = {"Select", "Delivery", "Payment", "Freight", "Price", "Taxes"};
 
 
     String str_ordertypeid,
@@ -152,12 +189,12 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput,Custo
             str_isthirdpartyid_name,
 
 
-            str_dispatchfrom_name,
+    str_dispatchfrom_name,
             str_saleperson_name,
 
-            str_ordercategoryid_name;
+    str_ordercategoryid_name;
 
-    EditText et_deliveryDate, et_trasportnote, et_remark,et_otherproductname;
+    EditText et_deliveryDate, et_trasportnote, et_remark, et_otherproductname;
     int mYear, mMonth, mDay;
     String action = "";
     String orderid = "";
@@ -183,23 +220,27 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput,Custo
     Dialog dispatchSearching;
     Dialog thirdpartySearching;
     Dialog salesPersonSearching;
-    boolean isThirdPartyChecked=false;
+    boolean isThirdPartyChecked = false;
     AppDatabase db;
     User user;
     String username;
     int usercode;
     TextView txt_choosefile;
-     Dialog dialog_fileOption;
-     String str_UplaodedFileName="";
-     Button btn_uplaodFile;
-     TextView txt_uploadedfilename;
-     ProgressDialog progressDialog;
+    Dialog dialog_fileOption;
+    String str_UplaodedFileName = "";
+    Button btn_uplaodFile;
+    TextView txt_uploadedfilename;
+    ProgressDialog progressDialog;
+String upath="";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_create);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+
+        StrictMode.setThreadPolicy(policy);
 
         setTitle("Create Order");
         context = OrderCreate.this;
@@ -214,7 +255,10 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput,Custo
             orderid = getIntent().getExtras().getString("oid") != null ? getIntent().getExtras().getString("oid") : "0";
             api.getOrderData(Integer.parseInt(orderid.trim()));
         }
+        checkPermission();
+        requestPermission();
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -230,17 +274,18 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput,Custo
         }
         return super.onOptionsItemSelected(item);
     }
+
     public void init() {
 
         try {
             sqlightDatabaseUtil = new SqlightDatabaseUtil(context);
             db = AppDatabase.getInstance(getApplicationContext());
             user = db.userDao().getUser();
-            usercode=user.getUserID();
-            username=user.getFullName();
+            usercode = user.getUserID();
+            username = user.getFullName();
 
-progressDialog=new ProgressDialog(context);
-progressDialog.setMessage("Please File Uploading...");
+            progressDialog = new ProgressDialog(context);
+            progressDialog.setMessage("Please File Uploading...");
 
             sp_ordertype = findViewById(R.id.sp_order_type);
             txt_choosefile = findViewById(R.id.txt_choosefile);
@@ -270,32 +315,28 @@ progressDialog.setMessage("Please File Uploading...");
             btn_order_create = findViewById(R.id.btn_create_order);
             ll_attachment = findViewById(R.id.ll_attachment);
 
-            et_discribe=findViewById(R.id.et_describe);
-            et_otherproductname=findViewById(R.id.et_otherproductname);
-            txt_add_terms=findViewById(R.id.btn_add_terms);
-            sp_terms_perticular=findViewById(R.id.sp_perticular);
-            adapter_terms_perticular= new ArrayAdapter(context,android.R.layout.simple_spinner_item, perticular);
+            et_discribe = findViewById(R.id.et_describe);
+            et_otherproductname = findViewById(R.id.et_otherproductname);
+            txt_add_terms = findViewById(R.id.btn_add_terms);
+            sp_terms_perticular = findViewById(R.id.sp_perticular);
+            adapter_terms_perticular = new ArrayAdapter(context, android.R.layout.simple_spinner_item, perticular);
             adapter_terms_perticular.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             sp_terms_perticular.setAdapter(adapter_terms_perticular);
 
-            btn_uplaodFile=findViewById(R.id.btn_uploadfile);
-            txt_uploadedfilename=findViewById(R.id.txt_selectedFileName);
+            btn_uplaodFile = findViewById(R.id.btn_uploadfile);
+            txt_uploadedfilename = findViewById(R.id.txt_selectedFileName);
 
 
-
-
-
-            if(user!=null)
-            {
+            if (user != null) {
                 txt_sales_person.setText(username);
-                str_saleperson=""+usercode;
+                str_saleperson = "" + usercode;
             }
 
             if (action.equals("New")) {
                 btn_order_create.setText("Create Order");
                 sqlightDatabaseUtil.clearProductList();
                 sqlightDatabaseUtil.clearTermsList();
-            }else if (action.equals("Edit"))
+            } else if (action.equals("Edit"))
                 btn_order_create.setText("Update Order");
 
             chk_isThirdParty = findViewById(R.id.chk_isthirdparty);
@@ -313,9 +354,9 @@ progressDialog.setMessage("Please File Uploading...");
                     } else {
                         sp_isthird_party.setEnabled(false);
                         txt_isthirdparty.setText("Choose Third Party");
-                        str_isthirdpartyid="0";
+                        str_isthirdpartyid = "0";
                     }
-                    isThirdPartyChecked=isChecked;
+                    isThirdPartyChecked = isChecked;
                 }
             });
 
@@ -403,7 +444,7 @@ progressDialog.setMessage("Please File Uploading...");
                     OrderTypeModel orderTypeModel = lst_OrderType.get(parent.getSelectedItemPosition());
                     //Toast.makeText(context, "Selected Order Type :" + orderTypeModel.getId() + "=" + orderTypeModel.getText(), Toast.LENGTH_SHORT).show();
                     str_ordertypeid = orderTypeModel.getId();
-                    str_ordertypeid_name=orderTypeModel.getText();
+                    str_ordertypeid_name = orderTypeModel.getText();
                 }
 
                 @Override
@@ -414,11 +455,11 @@ progressDialog.setMessage("Please File Uploading...");
             txt_customername.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    try{
-                        customerSearching=new Dialog(context);
+                    try {
+                        customerSearching = new Dialog(context);
                         customerSearching.setContentView(R.layout.customer_search_list);
-                        rc_customer=customerSearching.findViewById(R.id.rc_customerlist);
-                        EditText search_customer=customerSearching.findViewById(R.id.search_customer);
+                        rc_customer = customerSearching.findViewById(R.id.rc_customerlist);
+                        EditText search_customer = customerSearching.findViewById(R.id.search_customer);
                         mManager = new LinearLayoutManager(context);
                         rc_customer.setLayoutManager(mManager);
                         try {
@@ -463,28 +504,27 @@ progressDialog.setMessage("Please File Uploading...");
                         });
 
                         customerSearching.show();
-                    }catch(Exception e)
-                    {
-                        Toast.makeText(context, "ERROR IS "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(context, "ERROR IS " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
 
-txt_choosefile.setOnClickListener(new View.OnClickListener() {
-    @Override
-    public void onClick(View v) {
-        filechooserOption();
-    }
-});
+            txt_choosefile.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    filechooserOption();
+                }
+            });
 
             txt_dispatchfrom.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    try{
-                        dispatchSearching=new Dialog(context);
+                    try {
+                        dispatchSearching = new Dialog(context);
                         dispatchSearching.setContentView(R.layout.customer_search_list);
-                        rc_dispatch=dispatchSearching.findViewById(R.id.rc_customerlist);
-                        EditText search_customer=dispatchSearching.findViewById(R.id.search_customer);
+                        rc_dispatch = dispatchSearching.findViewById(R.id.rc_customerlist);
+                        EditText search_customer = dispatchSearching.findViewById(R.id.search_customer);
                         mManager = new LinearLayoutManager(context);
                         rc_dispatch.setLayoutManager(mManager);
                         try {
@@ -528,9 +568,8 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                         });
 
                         dispatchSearching.show();
-                    }catch(Exception e)
-                    {
-                        Toast.makeText(context, "ERROR IS "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(context, "ERROR IS " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -538,11 +577,11 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
             txt_sales_person.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    try{
-                        salesPersonSearching=new Dialog(context);
+                    try {
+                        salesPersonSearching = new Dialog(context);
                         salesPersonSearching.setContentView(R.layout.customer_search_list);
-                        rc_salesperson=salesPersonSearching.findViewById(R.id.rc_customerlist);
-                        EditText search_customer=salesPersonSearching.findViewById(R.id.search_customer);
+                        rc_salesperson = salesPersonSearching.findViewById(R.id.rc_customerlist);
+                        EditText search_customer = salesPersonSearching.findViewById(R.id.search_customer);
                         mManager = new LinearLayoutManager(context);
                         rc_salesperson.setLayoutManager(mManager);
                         try {
@@ -551,9 +590,8 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                             Toast.makeText(context, "Error is " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                         salesPersonSearching.show();
-                    }catch(Exception e)
-                    {
-                        Toast.makeText(context, "ERROR IS "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(context, "ERROR IS " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -561,11 +599,11 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
             txt_isthirdparty.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    try{
-                        thirdpartySearching=new Dialog(context);
+                    try {
+                        thirdpartySearching = new Dialog(context);
                         thirdpartySearching.setContentView(R.layout.customer_search_list);
-                        rc_thirdparty=thirdpartySearching.findViewById(R.id.rc_customerlist);
-                        EditText search_customer=thirdpartySearching.findViewById(R.id.search_customer);
+                        rc_thirdparty = thirdpartySearching.findViewById(R.id.rc_customerlist);
+                        EditText search_customer = thirdpartySearching.findViewById(R.id.search_customer);
                         mManager = new LinearLayoutManager(context);
                         rc_thirdparty.setLayoutManager(mManager);
                         try {
@@ -593,6 +631,7 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void afterTextChanged(Editable s) {
                                 try {
+                                    rc_thirdparty.setAdapter(null);
                                     customer_JsonObject = new JsonObject();
                                     customer_JsonObject.addProperty("UserId", usercode);
                                     customer_JsonObject.addProperty("CompanyId", "");
@@ -601,7 +640,7 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                                     customer_JsonObject.addProperty("QueryValue", s.toString());
                                     customer_JsonObject.addProperty("RowCount", 100);
                                     customer_JsonObject.addProperty("IsActive", true);
-                                    api.getDispatchCustomer(customer_JsonObject);
+                                    api.getThirdPartyCustomer(customer_JsonObject);
                                 } catch (Exception e) {
                                     Toast.makeText(context, "Error is " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                 }
@@ -609,24 +648,21 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                         });
 
                         thirdpartySearching.show();
-                    }catch(Exception e)
-                    {
-                        Toast.makeText(context, "ERROR IS "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(context, "ERROR IS " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
 
 
-
-
             txt_product.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    try{
-                        productSearching=new Dialog(context);
+                    try {
+                        productSearching = new Dialog(context);
                         productSearching.setContentView(R.layout.customer_search_list);
-                        rc_product=productSearching.findViewById(R.id.rc_customerlist);
-                        EditText search_customer=productSearching.findViewById(R.id.search_customer);
+                        rc_product = productSearching.findViewById(R.id.rc_customerlist);
+                        EditText search_customer = productSearching.findViewById(R.id.search_customer);
                         mManager = new LinearLayoutManager(context);
                         rc_product.setLayoutManager(mManager);
                         try {
@@ -653,7 +689,7 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                                 try {
                                     product_JsonObject = new JsonObject();
                                     product_JsonObject.addProperty("CompanyId", 8);
-                                    product_JsonObject.addProperty("QueryValue", ""+s.toString());
+                                    product_JsonObject.addProperty("QueryValue", "" + s.toString());
                                     product_JsonObject.addProperty("IsActive", true);
                                     api.getProducts(product_JsonObject);
                                 } catch (Exception e) {
@@ -663,13 +699,11 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                         });
 
                         productSearching.show();
-                    }catch(Exception e)
-                    {
-                        Toast.makeText(context, "ERROR IS "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(context, "ERROR IS " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
-
 
 
             sp_givenby.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -792,43 +826,39 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                     str_rate = et_rate.getText().toString().trim();
                     str_tot_amt = et_tot_amt.getText().toString().trim();
                     str_specification = et_specification.getText().toString().trim();
-                    if(str_product.trim().equals("0"))
-                    {
-                        strproductname=et_otherproductname.getText().toString().trim();
+                    if (str_product.trim().equals("0")) {
+                        strproductname = et_otherproductname.getText().toString().trim();
                     }
 
-                    if (str_product==null||str_product.equals(""))
-                    {
+                    if (str_product == null || str_product.equals("")) {
                         Toast.makeText(context, "Please choose product", Toast.LENGTH_SHORT).show();
                     }/*else if(str_specification.equals(""))
                     {
                         et_specification.setError("Required");
-                    }*/else if(str_qty.equals(""))
-                    {
+                    }*/ else if (str_qty.equals("")) {
                         et_qty.setError("Required");
-                    }else if(str_rate.equals(""))
-                    {
+                    } else if (str_rate.equals("")) {
                         et_rate.setError("Required");
-                    }else if(str_uomname.equals("")||str_uomname.equals("Select"))
-                    {
+                    } else if (str_uomname.equals("") || str_uomname.equals("Select")) {
                         Toast.makeText(context, "Please choose UOM.", Toast.LENGTH_SHORT).show();
-                    }else if(str_tot_amt.equals(""))
-                    {
+                    } else if (str_tot_amt.equals("")) {
                         et_tot_amt.setError("Required");
-                    }
-                    else if(strproductname.equals(""))
-                    {
+                    } else if (strproductname.equals("")) {
                         et_otherproductname.setError("Required");
-                    }
-
-                    else {
+                    } else {
                         if (sqlightDatabaseUtil.addProduct(str_product, str_rate, str_qty, str_uom, str_specification, str_tot_amt, strproductname, str_uomname, 0)) {
                             Toast.makeText(context, "Product Added in List.", Toast.LENGTH_SHORT).show();
                             showProductDetails();
-                            str_qty ="";et_qty.setText("");
-                            str_rate = "";et_rate.setText("");
-                            str_tot_amt = "";et_tot_amt.setText("");
-                            str_specification = "";et_specification.setText("");
+                            str_qty = "";
+                            et_qty.setText("");
+                            str_rate = "";
+                            et_rate.setText("");
+                            str_tot_amt = "";
+                            et_tot_amt.setText("");
+                            str_specification = "";
+                            et_specification.setText("");
+                            txt_product.setText("Choose Product");
+                            str_product = "";
                         }
                     }
                 }
@@ -837,31 +867,28 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
             txt_add_terms.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    try{
+                    try {
 
-                        int TermId=0;
-                        int SrNo=0;
-                        int OrderId=0;
-                        int ParticularId=sp_terms_perticular.getSelectedItemPosition();
-                        String name=sp_terms_perticular.getSelectedItem().toString().trim();
-                        String Condition=et_discribe.getText().toString().trim().trim();
-                        boolean IsRemoved=false;
-                        if(name.equals("")||name.equals("Select"))
-                        {
+                        int TermId = 0;
+                        int SrNo = 0;
+                        int OrderId = 0;
+                        int ParticularId = sp_terms_perticular.getSelectedItemPosition();
+                        String name = sp_terms_perticular.getSelectedItem().toString().trim();
+                        String Condition = et_discribe.getText().toString().trim().trim();
+                        boolean IsRemoved = false;
+                        if (name.equals("") || name.equals("Select")) {
                             Toast.makeText(context, "Please Select Particular.", Toast.LENGTH_SHORT).show();
-                        }else if(Condition.equals(""))
-                        {
+                        } else if (Condition.equals("")) {
                             et_discribe.setError("Required.");
-                        }else {
+                        } else {
 
                             if (sqlightDatabaseUtil.addTerms(TermId, SrNo, OrderId, ParticularId, Condition, IsRemoved, name)) {
                                 Toast.makeText(context, "Terms Added Successfully", Toast.LENGTH_SHORT).show();
                                 showTermsDetails();
                             }
                         }
-                    }catch (Exception e)
-                    {
-                        Toast.makeText(context, "Error "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(context, "Error " + e.getMessage(), Toast.LENGTH_SHORT).show();
 
                     }
                 }
@@ -904,7 +931,7 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                     UOMMOdel uommOdel = lst_UOM.get(parent.getSelectedItemPosition());
                     str_uom = uommOdel.getId();
                     str_uomname = uommOdel.getText();
-                   // Toast.makeText(context, str_uomname+"12 Selected :"+str_uom, Toast.LENGTH_SHORT).show();
+                    // Toast.makeText(context, str_uomname+"12 Selected :"+str_uom, Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
@@ -915,125 +942,114 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
             btn_order_create.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    str_deliverydate="";
+                    str_deliverydate = "";
                     str_remark = et_remark.getText().toString().trim();
-                    if(str_deliverydate.contains("T"))
-                    {
-                        str_deliverydate=str_deliverydate.substring(0,str_deliverydate.indexOf("T"));
+                    if (str_deliverydate.contains("T")) {
+                        str_deliverydate = str_deliverydate.substring(0, str_deliverydate.indexOf("T"));
                         et_deliveryDate.setText(str_deliverydate);
                     }
                     str_deliverydate = et_deliveryDate.getText().toString().trim();
                     str_transportnote = et_trasportnote.getText().toString().trim();
-                   // str_isthirdpartyid="1";
-                           if(str_ordertypeid==null||str_ordertypeid.equals(""))
-                           {
-                               Toast.makeText(context, "Order Type Missing.", Toast.LENGTH_SHORT).show();
-                           }
-                            else if(str_customerid==null||str_customerid.equals("")){
-                               Toast.makeText(context, "Customer Missing.", Toast.LENGTH_SHORT).show();
+                    // str_isthirdpartyid="1";
+                    if (str_ordertypeid == null || str_ordertypeid.equals("")) {
+                        Toast.makeText(context, "Order Type Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_customerid == null || str_customerid.equals("")) {
+                        Toast.makeText(context, "Customer Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
-                            else if(str_givenbyid==null||str_givenbyid.equals("")){
-                               Toast.makeText(context, "Given By Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_givenbyid == null || str_givenbyid.equals("")) {
+                        Toast.makeText(context, "Given By Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
-                            else if(str_followupid==null||str_followupid.equals("")){
-                               Toast.makeText(context, "Follow Up Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_followupid == null || str_followupid.equals("")) {
+                        Toast.makeText(context, "Follow Up Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
-                            else if(str_deliveryaddressid==null||str_deliveryaddressid.equals("")){
-                               Toast.makeText(context, "Delivery Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_deliveryaddressid == null || str_deliveryaddressid.equals("")) {
+                        Toast.makeText(context, "Delivery Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
-                            else if(str_billingaddressid==null||str_billingaddressid.equals("")){
-                               Toast.makeText(context, "Billing Address Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_billingaddressid == null || str_billingaddressid.equals("")) {
+                        Toast.makeText(context, "Billing Address Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
-                            else if(str_deliverydate==null||str_deliverydate.equals("")){
-                                et_deliveryDate.setError("Required");
-                               Toast.makeText(context, "Delivery Date Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_deliverydate == null || str_deliverydate.equals("")) {
+                        et_deliveryDate.setError("Required");
+                        Toast.makeText(context, "Delivery Date Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
+                    }
                           /*  else if(str_transportnote==null||str_transportnote.equals("")){
                                 et_trasportnote.setError("Required");
                                Toast.makeText(context, "Transport Note Missing.", Toast.LENGTH_SHORT).show();
 
                            }*/
-                            else if(str_dispatchfrom==null||str_dispatchfrom.equals("")){
-                               Toast.makeText(context, "Dispatch From Missing.", Toast.LENGTH_SHORT).show();
+                    else if (str_dispatchfrom == null || str_dispatchfrom.equals("")) {
+                        Toast.makeText(context, "Dispatch From Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
-                            else if(str_saleperson==null||str_saleperson.equals("")){
-                               Toast.makeText(context, "Sales Person Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (str_saleperson == null || str_saleperson.equals("")) {
+                        Toast.makeText(context, "Sales Person Missing.", Toast.LENGTH_SHORT).show();
 
-                           }
+                    }
                           /*  else if(str_remark==null||str_remark.equals("")){
                                 et_remark.setError("Required");
                                Toast.makeText(context, "Remark Missing.", Toast.LENGTH_SHORT).show();
 
                            }*/
-                            else if(str_ordercategoryid==null||str_ordercategoryid.equals("")){
-                               Toast.makeText(context, "Order Category Missing.", Toast.LENGTH_SHORT).show();
-                           }
-                            else if(sqlightDatabaseUtil.getAllProducts().length==0)
-                           {
-                               
-                               new MessageBox(context,"Product Details","Please Added Product",false,false,null).show();
-                               
-                           }else{
+                    else if (str_ordercategoryid == null || str_ordercategoryid.equals("")) {
+                        Toast.makeText(context, "Order Category Missing.", Toast.LENGTH_SHORT).show();
+                    } else if (sqlightDatabaseUtil.getAllProducts().length == 0) {
 
-                                JsonObject jsonObject_local=new JsonObject();
+                        new MessageBox(context, "Product Details", "Please Added Product", false, false, null).show();
 
-                                jsonObject_local.addProperty("OrderTypeName",str_ordertypeid_name);
-                                jsonObject_local.addProperty("OrderCategoryName",str_ordercategoryid_name);
-                                jsonObject_local.addProperty("CustomerName",str_customerid_name);
-                                jsonObject_local.addProperty("DeliveryAddressName",str_deliveryaddressid_name);
-                                jsonObject_local.addProperty("BillingAddressName",str_billingaddressid_name);
-                                jsonObject_local.addProperty("SalesPersonName",str_saleperson_name);
-                                jsonObject_local.addProperty("DispatchFromName",str_dispatchfrom_name);
-                                jsonObject_local.addProperty("OrderByName",str_dispatchfrom_name);
-                                jsonObject_local.addProperty("FollowWithName",str_followupid_name);
-                                jsonObject_local.addProperty("StatusName","New");
-                                jsonObject_local.addProperty("ThirdPartyName",str_isthirdpartyid_name);
+                    } else {
 
-                               if (action.trim().equals("New")) {
-                                   api.addOrder(str_ordertypeid,
-                                           str_customerid,
-                                           str_givenbyid,
-                                           str_followupid,
-                                           str_deliveryaddressid,
-                                           str_billingaddressid,
-                                           str_isthirdpartyid,
-                                           str_deliverydate,
-                                           str_transportnote,
-                                           str_dispatchfrom,
-                                           str_saleperson,
-                                           str_remark,
-                                           str_ordercategoryid, sqlightDatabaseUtil.getAllProducts(), sqlightDatabaseUtil.getAllTerms(),isThirdPartyChecked,str_UplaodedFileName,jsonObject_local);
-                               } else if (action.trim().equals("Edit")) {
-                                   //  Toast.makeText(context, "Update API CALLED" + orderDetailsModel.getOrderId(), Toast.LENGTH_SHORT).show();
-                                   int str_orderid = orderDetailsModel.getOrderId();
-                                   String str_ERPID = orderDetailsModel.getERPOrderNo();
-                                   String str_ERPDate = orderDetailsModel.getERPEntryDate();
-                                   api.updateOrder(
-                                           str_orderid,
-                                           str_ERPID,
-                                           str_ERPDate,
-                                           str_ordertypeid,
-                                           str_customerid,
-                                           str_givenbyid,
-                                           str_followupid,
-                                           str_deliveryaddressid,
-                                           str_billingaddressid,
-                                           str_isthirdpartyid,
-                                           str_deliverydate,
-                                           str_transportnote,
-                                           str_dispatchfrom,
-                                           str_saleperson,
-                                           str_remark,
-                                           str_ordercategoryid, sqlightDatabaseUtil.getAllProducts(),sqlightDatabaseUtil.getAllTerms(),isThirdPartyChecked,str_UplaodedFileName);
-                               }
-                           }
+                        JsonObject jsonObject_local = new JsonObject();
+
+                        jsonObject_local.addProperty("OrderTypeName", str_ordertypeid_name);
+                        jsonObject_local.addProperty("OrderCategoryName", str_ordercategoryid_name);
+                        jsonObject_local.addProperty("CustomerName", str_customerid_name);
+                        jsonObject_local.addProperty("DeliveryAddressName", str_deliveryaddressid_name);
+                        jsonObject_local.addProperty("BillingAddressName", str_billingaddressid_name);
+                        jsonObject_local.addProperty("SalesPersonName", str_saleperson_name);
+                        jsonObject_local.addProperty("DispatchFromName", str_dispatchfrom_name);
+                        jsonObject_local.addProperty("OrderByName", str_dispatchfrom_name);
+                        jsonObject_local.addProperty("FollowWithName", str_followupid_name);
+                        jsonObject_local.addProperty("StatusName", "New");
+                        jsonObject_local.addProperty("ThirdPartyName", str_isthirdpartyid_name);
+
+                        if (action.trim().equals("New")) {
+                            api.addOrder(str_ordertypeid,
+                                    str_customerid,
+                                    str_givenbyid,
+                                    str_followupid,
+                                    str_deliveryaddressid,
+                                    str_billingaddressid,
+                                    str_isthirdpartyid,
+                                    str_deliverydate,
+                                    str_transportnote,
+                                    str_dispatchfrom,
+                                    str_saleperson,
+                                    str_remark,
+                                    str_ordercategoryid, sqlightDatabaseUtil.getAllProducts(), sqlightDatabaseUtil.getAllTerms(), isThirdPartyChecked, str_UplaodedFileName, jsonObject_local);
+                        } else if (action.trim().equals("Edit")) {
+                            //  Toast.makeText(context, "Update API CALLED" + orderDetailsModel.getOrderId(), Toast.LENGTH_SHORT).show();
+                            int str_orderid = orderDetailsModel.getOrderId();
+                            String str_ERPID = orderDetailsModel.getERPOrderNo();
+                            String str_ERPDate = orderDetailsModel.getERPEntryDate();
+                            api.updateOrder(
+                                    str_orderid,
+                                    str_ERPID,
+                                    str_ERPDate,
+                                    str_ordertypeid,
+                                    str_customerid,
+                                    str_givenbyid,
+                                    str_followupid,
+                                    str_deliveryaddressid,
+                                    str_billingaddressid,
+                                    str_isthirdpartyid,
+                                    str_deliverydate,
+                                    str_transportnote,
+                                    str_dispatchfrom,
+                                    str_saleperson,
+                                    str_remark,
+                                    str_ordercategoryid, sqlightDatabaseUtil.getAllProducts(), sqlightDatabaseUtil.getAllTerms(), isThirdPartyChecked, str_UplaodedFileName);
+                        }
+                    }
                 }
             });
             et_rate.addTextChangedListener(new TextWatcher() {
@@ -1068,10 +1084,10 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
         btn_uplaodFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String selectedFileName=txt_uploadedfilename.getText().toString().trim();
-                if(!(selectedFileName.equals("")))
-                {
-                       uploadFile(file_path);
+                String selectedFileName = txt_uploadedfilename.getText().toString().trim();
+                if (!(selectedFileName.equals(""))) {
+                   // uploadFile(file_path);
+                    uploadFileVideo(file_path);
                 }
             }
         });
@@ -1082,18 +1098,18 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
     private void filechooserOption() {
 
 
-        try{
-            dialog_fileOption=new Dialog(context);
+        try {
+            dialog_fileOption = new Dialog(context);
             dialog_fileOption.setContentView(R.layout.filechooserdialog);
-            Button btn_photo,btn_file;
-            btn_photo=dialog_fileOption.findViewById(R.id.btn_takephoto);
-            btn_file=dialog_fileOption.findViewById(R.id.btn_choosefile);
+            Button btn_photo, btn_file;
+            btn_photo = dialog_fileOption.findViewById(R.id.btn_takephoto);
+            btn_file = dialog_fileOption.findViewById(R.id.btn_choosefile);
 
             btn_photo.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Toast.makeText(context, "Photo Take", Toast.LENGTH_SHORT).show();
-                    PickImageDialog.build(new PickSetup().setPickTypes(EPickType.CAMERA)).show(OrderCreate.this);
+                    PickImageDialog.build(new PickSetup().setPickTypes(EPickType.CAMERA,EPickType.GALLERY)).show(OrderCreate.this);
 
 
                 }
@@ -1103,7 +1119,8 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Toast.makeText(context, "File Chooser", Toast.LENGTH_SHORT).show();
-                    new ChooserDialog(context)
+    /*                new ChooserDialog(context)
+                            .withFilter(false, false, "jpg", "jpeg", "png")
                             .withStartFile("path")
                             .withChosenListener(new ChooserDialog.Result() {
                                 @Override
@@ -1122,20 +1139,193 @@ txt_choosefile.setOnClickListener(new View.OnClickListener() {
                                 }
                             })
                             .build()
-                            .show();
+                            .show();*/
+                       try {
 
+                        /*   final StorageChooser chooser = new StorageChooser.Builder()
+                                   // Specify context of the dialog
+                                   .withActivity(OrderCreate.this)
+                                   .withFragmentManager(getFragmentManager())
+                                   .withMemoryBar(true)
+                                   .allowCustomPath(true)
+                                   // Define the mode as the FILE CHOOSER
+                                   .setType(StorageChooser.FILE_PICKER)
+                                   .build();
+
+// 2. Handle what should happend when the user selects the directory !
+                           chooser.setOnSelectListener(new StorageChooser.OnSelectListener() {
+                               @Override
+                               public void onSelect(String path) {
+                                   // e.g /storage/emulated/0/Documents
+                                   Log.i("SELECTED", "" + path);
+                                   file_path = path;
+                                   txt_uploadedfilename.setText("" + file_path);
+                                   dialog_fileOption.dismiss();
+                               }
+                           });
+
+// 3. Display File Picker whenever you need to !
+                           chooser.show();*/
+
+
+
+//
+//                           intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+//                           intent.setType("*/*");
+//                           intent=Intent.createChooser(intent,"Choose Files");
+//                           intentActivityResultLauncher.launch(intent);
+
+                           Intent intent = new Intent(context, FilePickerActivity.class);
+                           intent.putExtra(FilePickerActivity.CONFIGS, new Configurations.Builder()
+                                   .setCheckPermission(true)
+                                   .setShowImages(true)
+                                   .enableImageCapture(true)
+                                   .setMaxSelection(1)
+                                   .setSkipZeroSizeFiles(true)
+                                   .setShowFiles(true)
+                                   .setRootPath("")
+                                   .setSingleChoiceMode(true)
+                                   .setSuffixes(new String[]{"doc", "docx", "pdf"})
+                                   .build());
+                           startActivityForResult(intent, 2301);
+                        //   intentActivityResultLauncher.launch(intent);
+                        //   startActivityForResult(intent, 7);
+
+                       }catch(Exception e)
+                       {
+                           Log.d("Error is",e.getMessage());
+                       }
                 }
             });
 
-dialog_fileOption.show();
+            dialog_fileOption.show();
 
-        }catch(Exception e)
-        {
+        } catch (Exception e) {
+            Toast.makeText(context, "Error is " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    ActivityResultLauncher<Intent> intentActivityResultLauncher=registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    Toast.makeText(context, ""+(result.getResultCode()==RESULT_OK), Toast.LENGTH_SHORT).show();
+                    if(result.getResultCode()==RESULT_OK)
+                    {
+                        try {
+                            Toast.makeText(context, ""+(result.getData()), Toast.LENGTH_SHORT).show();
+
+                            Intent data = result.getData();
+                            Uri uri = data.getData();
+                            if (!Uri.EMPTY.equals(uri)) {
+                                //handle followUri
+                                Toast.makeText(context, "URI is not EMpty", Toast.LENGTH_SHORT).show();
+                                String id = DocumentsContract.getDocumentId(uri);
+                                InputStream inputStream = getContentResolver().openInputStream(uri);
+
+                                File file = new File(getCacheDir().getAbsolutePath()+"/"+id);
+                                writeFile(inputStream, file);
+                                String filePath = file.getPath();
+                                Toast.makeText(context, file.getName()+"FilePath : " + filePath, Toast.LENGTH_SHORT).show();
+
+
+                                Log.i("File path",filePath);
+                            }
+                            String filePath = PathUtil.getPath(context, uri);
+                        //    String filePath = "";
+                        //    file_path = uri.getPath();
+                            file_path = filePath;
+                            txt_uploadedfilename.setText(filePath);
+                            Toast.makeText(context, "FilePath : " + filePath, Toast.LENGTH_SHORT).show();
+                        }catch(Exception e)
+                        {
+                            Toast.makeText(context, "ERROR: "+e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                        }
+                    }
+                }
+            }
+    );
+    void writeFile(InputStream in, File file) {
+        OutputStream out = null;
+        try {
+            out = new FileOutputStream(file);
+            byte[] buf = new byte[1024];
+            int len;
+            while((len=in.read(buf))>0){
+                out.write(buf,0,len);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            try {
+                if ( out != null ) {
+                    out.close();
+                }
+                in.close();
+            } catch ( IOException e ) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch(requestCode){
+            case 2301:
+
+                if (resultCode == RESULT_OK) {
+                   ArrayList<MediaFile> files = data.getParcelableArrayListExtra(FilePickerActivity.MEDIA_FILES);
+                    for (MediaFile m:files) {
+                        Log.i("Filename ",m.getPath());
+                        file_path = m.getPath();
+                        txt_uploadedfilename.setText(file_path);
+                    }
+                    dialog_fileOption.dismiss();
+                   // txt_uploadedfilename.setText(builder.toString());
+                    //Toast.makeText(context, ""+builder.toString(), Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+            case 7:
+
+                if(resultCode==RESULT_OK){
+                    try {
+                        Uri uri = data.getData();
+                        File file = new File(uri.getPath());//create path from uri
+                        final String[] split = file.getPath().split(":");//split the path.
+                        String PathHolder = file.getAbsolutePath();
+                        Log.i("FilePath",PathHolder);
+                        Toast.makeText(OrderCreate.this, PathHolder + " " + file.exists(), Toast.LENGTH_LONG).show();
+                        txt_uploadedfilename.setText("" + PathHolder);
+                    }catch(Exception e)
+                    {
+
+                    }
+                }
+                break;
 
         }
 
     }
 
+   /*  @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == Constants.REQ_UNICORN_FILE && resultCode == RESULT_OK){
+            if(data!=null){
+                ArrayList<String> files = data.getStringArrayListExtra("filePaths");
+                for(String file : files){
+                    Log.e("Selected", file);
+                }
+            }
+        }
+    }*/
 
     public void loadSpinners(String action, OrderDetailsModel orderDetailsModela) {
         try {
@@ -1151,15 +1341,15 @@ dialog_fileOption.show();
                         str_uom = "" + items.getUOMId();
                         strproductname = items.getProductName();
                         str_uomname = items.getUOMName();
-                        if (sqlightDatabaseUtil.addProduct("" + items.getProductId(), str_rate, str_qty, str_uom, str_specification, str_tot_amt, strproductname, str_uomname,items.getItemId())) {
+                        if (sqlightDatabaseUtil.addProduct("" + items.getProductId(), str_rate, str_qty, str_uom, str_specification, str_tot_amt, strproductname, str_uomname, items.getItemId())) {
                             // Toast.makeText(context, "Product Added in List.", Toast.LENGTH_SHORT).show();
                             //showProductDetails();
-                            Log.i("Productid",""+items.getItemId());
+                            Log.i("Productid", "" + items.getItemId());
                         }
                     }
                 }
 
-                if(orderDetailsModel.getAttachments()!=null) {
+                if (orderDetailsModel.getAttachments() != null) {
                     if (orderDetailsModel.getAttachments().size() > 0) {
                         try {
                             str_UplaodedFileName = orderDetailsModel.getAttachments().get(0);
@@ -1189,31 +1379,31 @@ dialog_fileOption.show();
 
             } catch (Exception e) {
                 Log.i("Error is", e.getMessage());
-              //  Toast.makeText(context, "122" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                //  Toast.makeText(context, "122" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
 
             try {
                 if (orderDetailsModel.getTermConditionItems() != null && orderDetailsModel.getTermConditionItems().size() >= 1) {
                     boolean b = sqlightDatabaseUtil.clearTermsList();
-                    for (TermConditionItems items:orderDetailsModel.getTermConditionItems() ) {
-                        int TermId=items.getTermId();
-                        int SrNo=items.getSrNo();
-                        int OrderId=items.getOrderId();
-                        int ParticularId=items.getParticularId();
-                        String name=items.getParticularName();
-                        String Condition=items.getCondition();
-                        boolean IsRemoved=items.isRemoved();
-                            if (sqlightDatabaseUtil.addTerms(TermId, SrNo, OrderId, ParticularId, Condition, IsRemoved, name)) {
-                                Toast.makeText(context, "Terms Added Successfully", Toast.LENGTH_SHORT).show();
-                                showTermsDetails();
-                            }
+                    for (TermConditionItems items : orderDetailsModel.getTermConditionItems()) {
+                        int TermId = items.getTermId();
+                        int SrNo = items.getSrNo();
+                        int OrderId = items.getOrderId();
+                        int ParticularId = items.getParticularId();
+                        String name = items.getParticularName();
+                        String Condition = items.getCondition();
+                        boolean IsRemoved = items.isRemoved();
+                        if (sqlightDatabaseUtil.addTerms(TermId, SrNo, OrderId, ParticularId, Condition, IsRemoved, name)) {
+                            Toast.makeText(context, "Terms Added Successfully", Toast.LENGTH_SHORT).show();
+                            showTermsDetails();
+                        }
 
                     }
                 }
 
             } catch (Exception e) {
                 Log.i("Error is", e.getMessage());
-               // Toast.makeText(context, "123" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                // Toast.makeText(context, "123" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
 
             showProductDetails();
@@ -1221,16 +1411,16 @@ dialog_fileOption.show();
             api.getOrderType();
             //api.getGivenBy(2);
             //api.getAddress(2);
-           // api.getSalesPerson();
+            // api.getSalesPerson();
             api.getOrderCategory();
             api.getUOM();
 
             try {
-                str_customerid=""+orderDetailsModel.getCustomerId();
+                str_customerid = "" + orderDetailsModel.getCustomerId();
                 api.getGivenBy(Integer.parseInt(str_customerid.trim()));
                 api.getAddress(Integer.parseInt(str_customerid.trim()));
             } catch (NumberFormatException e) {
-                Toast.makeText(context, "Error "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Error " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
 
             //       }
@@ -1272,7 +1462,7 @@ dialog_fileOption.show();
             Vector v[] = sqlightDatabaseUtil.getAllProducts();
             if (v.length > 0) {
                 TableRow row1 = new TableRow(context);
-                TextView txtqty1, txtrate1, txttotal1, txtsepcification1, txtuom1, txtproduct1,txt_action;
+                TextView txtqty1, txtrate1, txttotal1, txtsepcification1, txtuom1, txtproduct1, txt_action;
                 txtqty1 = new TextView(context);
                 txtrate1 = new TextView(context);
                 txttotal1 = new TextView(context);
@@ -1308,19 +1498,18 @@ dialog_fileOption.show();
             for (int i = 0; i < v.length; i++) {
                 TableRow row = new TableRow(context);
                 TextView txtqty, txtrate, txttotal, txtsepcification, txtuom, txtproduct;
-                TextView btn_remove=new TextView(context);
+                TextView btn_remove = new TextView(context);
                 btn_remove.setId(Integer.parseInt(v[i].get(1).toString().trim()));
                 btn_remove.setText("Remove ");
                 btn_remove.setGravity(Gravity.CENTER);
                 btn_remove.setTextColor(Color.RED);
-                btn_remove.setPadding(5,5,5,5);
+                btn_remove.setPadding(5, 5, 5, 5);
 
-               // btn_remove.setLayoutParams (new LinearLayout.LayoutParams(100, LinearLayout.LayoutParams.WRAP_CONTENT));
+                // btn_remove.setLayoutParams (new LinearLayout.LayoutParams(100, LinearLayout.LayoutParams.WRAP_CONTENT));
                 btn_remove.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if(sqlightDatabaseUtil.clearProductList(v.getId()))
-                        {
+                        if (sqlightDatabaseUtil.clearProductList(v.getId())) {
                             Toast.makeText(context, "Item Removed", Toast.LENGTH_SHORT).show();
                             showProductDetails();
                         }
@@ -1363,6 +1552,7 @@ dialog_fileOption.show();
 
         }
     }
+
     private void showTermsDetails() {
         try {
 
@@ -1390,24 +1580,22 @@ dialog_fileOption.show();
                 row1.addView(txt_condition);
 
 
-
                 tbl_grid_terms.addView(row1);
             }
             for (int i = 0; i < v.length; i++) {
                 TableRow row = new TableRow(context);
                 TextView txt_perticular, txt_condition, txt_action;
 
-                TextView btn_remove=new TextView(context);
+                TextView btn_remove = new TextView(context);
                 btn_remove.setId(Integer.parseInt(v[i].get(3).toString().trim()));
                 btn_remove.setText("Remove ");
 
                 btn_remove.setTextColor(Color.RED);
-                btn_remove.setPadding(5,5,5,5);
+                btn_remove.setPadding(5, 5, 5, 5);
                 btn_remove.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if(sqlightDatabaseUtil.clearTermsList(v.getId()))
-                        {
+                        if (sqlightDatabaseUtil.clearTermsList(v.getId())) {
                             Toast.makeText(context, "Terms Removed", Toast.LENGTH_SHORT).show();
                             showTermsDetails();
                         }
@@ -1417,7 +1605,6 @@ dialog_fileOption.show();
 
                 txt_perticular = new TextView(context);
                 txt_condition = new TextView(context);
-
 
 
                 txt_perticular.setText(v[i].get(6).toString());
@@ -1439,13 +1626,12 @@ dialog_fileOption.show();
         }
     }
 
-    public void customer(View w)
-    {
-        try{
-            customerSearching=new Dialog(context);
+    public void customer(View w) {
+        try {
+            customerSearching = new Dialog(context);
             customerSearching.setContentView(R.layout.customer_search_list);
-            rc_customer=customerSearching.findViewById(R.id.rc_customerlist);
-            EditText search_customer=customerSearching.findViewById(R.id.search_customer);
+            rc_customer = customerSearching.findViewById(R.id.rc_customerlist);
+            EditText search_customer = customerSearching.findViewById(R.id.search_customer);
             mManager = new LinearLayoutManager(context);
             rc_customer.setLayoutManager(mManager);
             try {
@@ -1490,9 +1676,8 @@ dialog_fileOption.show();
             });
 
             customerSearching.show();
-        }catch(Exception e)
-        {
-            Toast.makeText(context, "ERROR IS "+e.getMessage(), Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(context, "ERROR IS " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1545,20 +1730,18 @@ dialog_fileOption.show();
     public void onListResponce_Customer(List result) {
         if (result != null) {
 
-            try{
-                if(result!=null) {
+            try {
+                if (result != null) {
 
-                    lst_customer=result;
-                    customerAdapter = new CustomerAdapter((ArrayList) lst_customer, context,this);
+                    lst_customer = result;
+                    customerAdapter = new CustomerAdapter((ArrayList) lst_customer, context, this);
                     rc_customer.setAdapter(customerAdapter);
 
-                }else
-                {
+                } else {
                     Toast.makeText(context, "No more records.", Toast.LENGTH_SHORT).show();
                 }
-            }catch(Exception e)
-            {
-                Toast.makeText(context, "Erro in Respo"+e.getMessage(), Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Toast.makeText(context, "Erro in Respo" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -1566,57 +1749,62 @@ dialog_fileOption.show();
 
     @Override
     public void onListResponce_Contact(List result) {
-        if (result != null) {
-            lst_GivenBy=new ArrayList<>(result);
-            lst_followupwith=new ArrayList<>(result);
-            lst_IsThirdParty=new ArrayList<>(result);
+        //  if (result != null) {
+       // Toast.makeText(context, "Help", Toast.LENGTH_SHORT).show();
+        sp_givenby.setAdapter(null);
+        sp_followup_with.setAdapter(null);
+        sp_isthird_party.setAdapter(null);
 
-            if (action.equals("Edit")) {
+        lst_GivenBy = new ArrayList<>(result);
+        lst_followupwith = new ArrayList<>(result);
+        lst_IsThirdParty = new ArrayList<>(result);
 
-                // changeValuesSalesPersonSpinner(adapter,result);
-                if (orderDetailsModel.getOrderByName() != null) {
-                    ContactModel tempModel = new ContactModel();
-                    tempModel.setId("" + orderDetailsModel.getOrderBy());
-                    tempModel.setText("" + orderDetailsModel.getOrderByName());
-                    Toast.makeText(context, "Order By Name"+orderDetailsModel.getOrderByName(), Toast.LENGTH_SHORT).show();
-                    lst_GivenBy.add(0, tempModel);
-                }
-                Log.i("Order BY Name",""+lst_GivenBy.size());
-                if (orderDetailsModel.getFollowWithName() != null) {
+        if (action.equals("Edit")) {
 
-                    ContactModel tempModel_followup = new ContactModel();
-                    tempModel_followup.setId("" + orderDetailsModel.getFollowWith());
-                    tempModel_followup.setText("" + orderDetailsModel.getFollowWithName());
-                    lst_followupwith.add(0, tempModel_followup);
-                }
-                Log.i("Order BY Name",""+lst_followupwith.size());
-                if (orderDetailsModel.getThirdPartyName() != null) {
-                    ContactModel tempModel_IsThirdParty = new ContactModel();
-                    tempModel_IsThirdParty.setId("" + orderDetailsModel.getThirdPartyId());
-                    tempModel_IsThirdParty.setText("" + orderDetailsModel.getThirdPartyName());
-                    lst_IsThirdParty.add(0, tempModel_IsThirdParty);
-                }
-                Log.i("Order BY Name",""+lst_followupwith.size());
+            // changeValuesSalesPersonSpinner(adapter,result);
+            if (orderDetailsModel.getOrderByName() != null) {
+                ContactModel tempModel = new ContactModel();
+                tempModel.setId("" + orderDetailsModel.getOrderBy());
+                tempModel.setText("" + orderDetailsModel.getOrderByName());
+                Toast.makeText(context, "Order By Name" + orderDetailsModel.getOrderByName(), Toast.LENGTH_SHORT).show();
+                lst_GivenBy.add(0, tempModel);
             }
-            Log.i("given BY ",""+lst_IsThirdParty.size());
+            Log.i("Order BY Name", "" + lst_GivenBy.size());
+            if (orderDetailsModel.getFollowWithName() != null) {
 
-            ArrayAdapter adapter = new ArrayAdapter(context,
-                    android.R.layout.simple_spinner_item, api.getTitleFromList_For_Contact(lst_GivenBy));
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-            ArrayAdapter adapter_followup = new ArrayAdapter(context,
-                    android.R.layout.simple_spinner_item, api.getTitleFromList_For_Contact(lst_followupwith));
-            adapter_followup.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-            ArrayAdapter adapter_IsthirdParty = new ArrayAdapter(context,
-                    android.R.layout.simple_spinner_item, api.getTitleFromList_For_Contact(lst_IsThirdParty));
-            adapter_IsthirdParty.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-            sp_givenby.setAdapter(adapter);
-            sp_followup_with.setAdapter(adapter_followup);
-            sp_isthird_party.setAdapter(adapter_IsthirdParty);
-
+                ContactModel tempModel_followup = new ContactModel();
+                tempModel_followup.setId("" + orderDetailsModel.getFollowWith());
+                tempModel_followup.setText("" + orderDetailsModel.getFollowWithName());
+                lst_followupwith.add(0, tempModel_followup);
+            }
+            Log.i("Order BY Name", "" + lst_followupwith.size());
+            if (orderDetailsModel.getThirdPartyName() != null) {
+                ContactModel tempModel_IsThirdParty = new ContactModel();
+                tempModel_IsThirdParty.setId("" + orderDetailsModel.getThirdPartyId());
+                tempModel_IsThirdParty.setText("" + orderDetailsModel.getThirdPartyName());
+                lst_IsThirdParty.add(0, tempModel_IsThirdParty);
+            }
+            Log.i("Order BY Name", "" + lst_followupwith.size());
         }
+        Log.i("given BY ", "" + lst_IsThirdParty.size());
+
+        ArrayAdapter adapter = new ArrayAdapter(context,
+                android.R.layout.simple_spinner_item, api.getTitleFromList_For_Contact(lst_GivenBy));
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        ArrayAdapter adapter_followup = new ArrayAdapter(context,
+                android.R.layout.simple_spinner_item, api.getTitleFromList_For_Contact(lst_followupwith));
+        adapter_followup.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        ArrayAdapter adapter_IsthirdParty = new ArrayAdapter(context,
+                android.R.layout.simple_spinner_item, api.getTitleFromList_For_Contact(lst_IsThirdParty));
+        adapter_IsthirdParty.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        sp_givenby.setAdapter(adapter);
+        sp_followup_with.setAdapter(adapter_followup);
+        sp_isthird_party.setAdapter(adapter_IsthirdParty);
+
+        //  }
     }
 
     @Override
@@ -1662,7 +1850,7 @@ dialog_fileOption.show();
     public void onListResponce_Employee(List result) {
         if (result != null) {
             lst_Employee = result;
-            salesPersonAdapter = new SalesPersonAdapter((ArrayList) lst_Employee, context,this);
+            salesPersonAdapter = new SalesPersonAdapter((ArrayList) lst_Employee, context, this);
             rc_salesperson.setAdapter(salesPersonAdapter);
 
         }
@@ -1699,12 +1887,12 @@ dialog_fileOption.show();
                     R.layout.type_item, api.getTitleFromList_For_Product(result));
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             sp_product.setAdapter(adapter);*/
-            ProductModel productModel=new ProductModel();
+            ProductModel productModel = new ProductModel();
             productModel.setId("0");
             productModel.setText("Other");
-            lst_Product.add(0,productModel);
+            lst_Product.add(0, productModel);
 
-            productAdapter = new ProductAdapter((ArrayList) lst_Product, context,this);
+            productAdapter = new ProductAdapter((ArrayList) lst_Product, context, this);
             rc_product.setAdapter(productAdapter);
 
 
@@ -1716,10 +1904,10 @@ dialog_fileOption.show();
         if (result != null) {
 
             lst_UOM = result;
-            UOMMOdel select=new UOMMOdel();
+            UOMMOdel select = new UOMMOdel();
             select.setId("0");
             select.setText("Select");
-            lst_UOM.add(0,select);
+            lst_UOM.add(0, select);
 
 
             ArrayAdapter adapter = new ArrayAdapter(context,
@@ -1738,34 +1926,32 @@ dialog_fileOption.show();
             this.orderDetailsModel = result;
 
             et_remark.setText(orderDetailsModel.getRemark());
-            str_deliverydate=orderDetailsModel.getDeliveryDate();
-            if(str_deliverydate.contains("T"))
-            {
-                str_deliverydate=str_deliverydate.substring(0,str_deliverydate.indexOf("T"));
+            str_deliverydate = orderDetailsModel.getDeliveryDate();
+            if (str_deliverydate.contains("T")) {
+                str_deliverydate = str_deliverydate.substring(0, str_deliverydate.indexOf("T"));
                 et_deliveryDate.setText(str_deliverydate);
-            }else {
+            } else {
                 et_deliveryDate.setText(orderDetailsModel.getDeliveryDate());
             }
             et_trasportnote.setText(orderDetailsModel.getTransportNote());
-            str_dispatchfrom=""+orderDetailsModel.getDispatchFrom();
+            str_dispatchfrom = "" + orderDetailsModel.getDispatchFrom();
             txt_dispatchfrom.setText(orderDetailsModel.getDispatchFromName());
             txt_customername.setText(orderDetailsModel.getCustomerName());
             txt_isthirdparty.setText(orderDetailsModel.getThirdPartyName());
-            str_isthirdpartyid=""+orderDetailsModel.getThirdPartyId();
-            str_customerid=""+orderDetailsModel.getCustomerId();
-            str_dispatchfrom=""+orderDetailsModel.getDispatchFrom();
+            str_isthirdpartyid = "" + orderDetailsModel.getThirdPartyId();
+            str_customerid = "" + orderDetailsModel.getCustomerId();
+            str_dispatchfrom = "" + orderDetailsModel.getDispatchFrom();
             txt_dispatchfrom.setText(orderDetailsModel.getDispatchFromName());
-            str_givenbyid=""+orderDetailsModel.getOrderBy();
-            boolean b=orderDetailsModel.isThirdParty();
+            str_givenbyid = "" + orderDetailsModel.getOrderBy();
+            boolean b = orderDetailsModel.isThirdParty();
 
             txt_sales_person.setText(orderDetailsModel.getSalesPersonName());
-            str_saleperson=""+orderDetailsModel.getSalesPerson();
+            str_saleperson = "" + orderDetailsModel.getSalesPerson();
 
-            if(b)
+            if (b)
                 chk_isThirdParty.setChecked(true);
             else
                 chk_isThirdParty.setChecked(false);
-
 
 
             //  loadSpinners(action,result);
@@ -1784,16 +1970,15 @@ dialog_fileOption.show();
             sqlightDatabaseUtil.clearProductList();
             sqlightDatabaseUtil.clearTermsList();
             if (action.equals("New")) {
-                new MessageBox(context,"Create Order","Order Placed Your Order id is :" + body,true,true, OrderDataList.class).show();
+                new MessageBox(context, "Create Order", "Order Placed Your Order id is :" + body, true, true, OrderDataList.class).show();
                 Toast.makeText(context, "Order Placed Your Order id is :" + body, Toast.LENGTH_SHORT).show();
             } else if (action.equals("Edit")) {
                 Toast.makeText(context, "Order Update" + body, Toast.LENGTH_SHORT).show();
-                new MessageBox(context,"Order Update","Order Update" + body,true,true,OrderDataList.class).show();
+                new MessageBox(context, "Order Update", "Order Update" + body, true, true, OrderDataList.class).show();
 
-            }else
-            {
-                 if(body!=null)
-                     new MessageBox(context,"Order Update",body,false,true,null).show();
+            } else {
+                if (body != null)
+                    new MessageBox(context, "Order Update", body, false, true, null).show();
 
             }
 
@@ -1807,18 +1992,16 @@ dialog_fileOption.show();
         if (result != null) {
 
 
-            try{
-                if(result!=null) {
-                   // lst_customer=result;
-                    dispatchAdapter = new DispatchAdapter((ArrayList) result, context,this);
-                     rc_dispatch.setAdapter(dispatchAdapter);
-                }else
-                {
+            try {
+                if (result != null) {
+                    // lst_customer=result;
+                    dispatchAdapter = new DispatchAdapter((ArrayList) result, context, this);
+                    rc_dispatch.setAdapter(dispatchAdapter);
+                } else {
                     Toast.makeText(context, "No more records.", Toast.LENGTH_SHORT).show();
                 }
-            }catch(Exception e)
-            {
-                Toast.makeText(context, "Erro in Respo"+e.getMessage(), Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Toast.makeText(context, "Erro in Respo" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -1829,18 +2012,16 @@ dialog_fileOption.show();
         if (result != null) {
 
 
-            try{
-                if(result!=null) {
+            try {
+                if (result != null) {
                     // lst_customer=result;
-                    thirpartyAdpater = new ThirdPartyAdapter((ArrayList) result, context,this);
+                    thirpartyAdpater = new ThirdPartyAdapter((ArrayList) result, context, this);
                     rc_thirdparty.setAdapter(thirpartyAdpater);
-                }else
-                {
+                } else {
                     Toast.makeText(context, "No more records.", Toast.LENGTH_SHORT).show();
                 }
-            }catch(Exception e)
-            {
-                Toast.makeText(context, "Erro in Respo"+e.getMessage(), Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Toast.makeText(context, "Erro in Respo" + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -1906,11 +2087,18 @@ dialog_fileOption.show();
 
     @Override
     public void onCustomerSelected(CustomerModel customerModel) {
-        Toast.makeText(context, " Id = "+customerModel.getId()+"\nName :"+customerModel.getText(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, " Id = " + customerModel.getId() + "\nName :" + customerModel.getText(), Toast.LENGTH_SHORT).show();
         customerSearching.dismiss();
         str_customerid = customerModel.getId();
         str_customerid_name = customerModel.getText();
-        txt_customername.setText(""+customerModel.getText());
+        txt_customername.setText("" + customerModel.getText());
+
+        //   sp_isthird_party.setAdapter(null);
+        sp_followup_with.setAdapter(null);
+        sp_givenby.setAdapter(null);
+        sp_deliveryaddress.setAdapter(null);
+        sp_billingaddress.setAdapter(null);
+
 
         api.getGivenBy(Integer.parseInt(customerModel.getId().trim()));
         api.getAddress(Integer.parseInt(customerModel.getId().trim()));
@@ -1920,17 +2108,15 @@ dialog_fileOption.show();
     public void onProductSelected(ProductModel productModel) {
         productSearching.dismiss();
 
-        if(productModel.getId().trim().equals("0"))
-        {
+        if (productModel.getId().trim().equals("0")) {
             et_otherproductname.setVisibility(View.VISIBLE);
             str_product = productModel.getId();
-            strproductname=et_otherproductname.getText().toString().trim();
-        }else
-        {
+            strproductname = et_otherproductname.getText().toString().trim();
+        } else {
             et_otherproductname.setVisibility(View.GONE);
             str_product = productModel.getId();
-            strproductname=productModel.getText();
-            txt_product.setText(""+strproductname);
+            strproductname = productModel.getText();
+            txt_product.setText("" + strproductname);
         }
 
 
@@ -1941,7 +2127,7 @@ dialog_fileOption.show();
         dispatchSearching.dismiss();
         str_dispatchfrom = customerModel.getId();
         str_dispatchfrom_name = customerModel.getText();
-        txt_dispatchfrom.setText(""+customerModel.getText());
+        txt_dispatchfrom.setText("" + customerModel.getText());
     }
 
     @Override
@@ -1949,7 +2135,7 @@ dialog_fileOption.show();
         thirdpartySearching.dismiss();
         str_isthirdpartyid = customerModel.getId();
         str_isthirdpartyid_name = customerModel.getText();
-        txt_isthirdparty.setText(""+customerModel.getText());
+        txt_isthirdparty.setText("" + customerModel.getText());
     }
 
     @Override
@@ -1957,7 +2143,7 @@ dialog_fileOption.show();
         salesPersonSearching.dismiss();
         str_saleperson = dataModel.getId();
         str_saleperson_name = dataModel.getText();
-        txt_sales_person.setText(""+dataModel.getText());
+        txt_sales_person.setText("" + dataModel.getText());
     }
 
     @Override
@@ -1982,11 +2168,11 @@ dialog_fileOption.show();
             Log.i("Image Path",split.length+"Path : "+filePath);*/
             //    Log.i("Base64 :", MyApplicationUtil.getImageDatadetail(r.getPath()));
             file_path = r.getPath();
-           // Toast.makeText(context, ""+file_path, Toast.LENGTH_SHORT).show();
-           txt_uploadedfilename.setText(""+file_path);
+            // Toast.makeText(context, ""+file_path, Toast.LENGTH_SHORT).show();
+            txt_uploadedfilename.setText("" + file_path);
             dialog_fileOption.dismiss();
-           // uri = r.getUri();
-           // base64_image = MyApplicationUtil.getImageDatadetail(r.getPath());
+            // uri = r.getUri();
+            // base64_image = MyApplicationUtil.getImageDatadetail(r.getPath());
         } catch (Exception e) {
             Log.i("Error is ", e.getMessage());
         }
@@ -1994,12 +2180,12 @@ dialog_fileOption.show();
 
     private void uploadFile(String path) {
         try {
-            Toast.makeText(context, "File path"+path, Toast.LENGTH_SHORT).show();
-            if(!progressDialog.isShowing())
+         //   Toast.makeText(context, "File path" + path, Toast.LENGTH_SHORT).show();
+            if (!progressDialog.isShowing())
                 progressDialog.show();
 
-            File file1=new File(path);
-
+            File file1 = new File(path);
+        //    Toast.makeText(context, "File path" + file1.exists(), Toast.LENGTH_SHORT).show();
 
             //    File file1 = null;
             RequestBody requestBody1 = null;
@@ -2019,25 +2205,25 @@ dialog_fileOption.show();
             }
 
 
-            Call<String> call = RetrofitClient.getInstance().getMyApi().uploadProductQualityImage(imageFileBody1,requestBody1);
+            Call<String> call = RetrofitClient.getInstance().getMyApi().uploadProductQualityImage(imageFileBody1, requestBody1);
 
             call.enqueue(new Callback<String>() {
                 @Override
                 public void onResponse(Call<String> call, Response<String> response) {
                     if (response.isSuccessful()) {
 
-                            Toast.makeText(context, " Success "+response.body(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, " Success " + response.body(), Toast.LENGTH_SHORT).show();
 
-                            str_UplaodedFileName=response.body();
-                            str_UplaodedFileName=str_UplaodedFileName.replace("[\"","");
-                            str_UplaodedFileName=str_UplaodedFileName.replace("\"]","");
-                            str_UplaodedFileName=str_UplaodedFileName.substring(str_UplaodedFileName.lastIndexOf("/")+1);
-                            txt_uploadedfilename.setText(""+str_UplaodedFileName);
-                            progressDialog.dismiss();
+                        str_UplaodedFileName = response.body();
+                        str_UplaodedFileName = str_UplaodedFileName.replace("[\"", "");
+                        str_UplaodedFileName = str_UplaodedFileName.replace("\"]", "");
+                        str_UplaodedFileName = str_UplaodedFileName.substring(str_UplaodedFileName.lastIndexOf("/") + 1);
+                        txt_uploadedfilename.setText("" + str_UplaodedFileName);
+                        progressDialog.dismiss();
 
                     } else {
 
-                        Toast.makeText(context, "Fail "+response.body(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Fail " + response.body(), Toast.LENGTH_SHORT).show();
                         progressDialog.dismiss();
                         txt_uploadedfilename.setText("Fail to Upload.");
                     }
@@ -2045,22 +2231,18 @@ dialog_fileOption.show();
 
                 @Override
                 public void onFailure(Call<String> call, Throwable t) {
-                    Toast.makeText(context, " Error -"+t.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, " Error -" + t.getMessage(), Toast.LENGTH_SHORT).show();
                     progressDialog.dismiss();
                     txt_uploadedfilename.setText("Fail to Upload.");
                 }
             });
 
 
-
-
-
-
-
             // return true;
         } catch (Exception e) {
             progressDialog.dismiss();
             Log.i("Error is", e.getMessage());
+
             txt_uploadedfilename.setText("Fail to Upload.");
             //  return false;
         }
@@ -2104,5 +2286,108 @@ dialog_fileOption.show();
 
     }
 
+    private void uploadFileVideo(String path) {
+         upath=path;
+         new UplaodFile().execute(path);
 
+    }
+
+    public class UplaodFile extends AsyncTask{
+        String fname="";
+        ProgressDialog progressDialog;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog=new ProgressDialog(context);
+            progressDialog.setMessage("Uploading File ....");
+            progressDialog.show();
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+            progressDialog.dismiss();
+            txt_uploadedfilename.setText(o.toString().trim());
+        }
+
+        @Override
+        protected Object doInBackground(Object[] path) {
+
+            try {
+                Log.i("Path ",upath);
+                Log.i("Path ",""+((new File(upath)).length()/1024)/1024 +" MB");
+                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+
+                StrictMode.setThreadPolicy(policy);
+                String charset = "UTF-8";
+                File uploadFile1 = new File(upath.trim());
+                String requestURL = Constants.BASE_URL+"v1/attachments/upload?documentType=8";
+
+                MultipartUtility multipart = new MultipartUtility(requestURL, charset);
+
+                multipart.addHeaderField("documentType", "8");
+//            multipart.addHeaderField("Test-Header", "Header-Value");
+
+                // multipart.addFormField("friend_id", "Cool Pictures");
+                multipart.addFormField("documentType", "8");
+
+                multipart.addFilePart("file", uploadFile1);
+
+                List<String> response = multipart.finish();
+
+                Log.v("rht", "SERVER REPLIED:");
+
+                for (String line : response) {
+                    Log.v("rht", "Line : "+line);
+                    str_UplaodedFileName = line;
+                    str_UplaodedFileName = str_UplaodedFileName.replace("[\"", "");
+                    str_UplaodedFileName = str_UplaodedFileName.replace("\"]", "");
+                    str_UplaodedFileName = str_UplaodedFileName.substring(str_UplaodedFileName.lastIndexOf("/") + 1);
+                    fname=str_UplaodedFileName;
+                    // txt_uploadedfilename.setText(line);
+                }
+                return fname;
+                //txt_uploadedfilename.setText("File Uploaded Successfully..");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+    }
+    private boolean checkPermission() {
+        int result = ContextCompat.checkSelfPermission(getApplicationContext(), READ_EXTERNAL_STORAGE);
+        int result1 = ContextCompat.checkSelfPermission(getApplicationContext(), WRITE_EXTERNAL_STORAGE);
+
+        return result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestPermission() {
+
+        ActivityCompat.requestPermissions(this, new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE}, 111);
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case 111:
+                if (grantResults.length > 0) {
+
+                    boolean locationAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                    boolean cameraAccepted = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+
+                    if (locationAccepted && cameraAccepted) {
+                    } else {
+
+                        Toast.makeText(context, "Please allow the permission.", Toast.LENGTH_SHORT).show();
+                        checkPermission();
+                    }
+                }
+
+
+                break;
+        }
+    }
 }

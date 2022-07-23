@@ -10,4 +10,5 @@ public interface ResultOutput {
 
     public void onListResponce_Customer(List result);
 
+    void onVersionResponse(String result);
 }

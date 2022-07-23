@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -35,7 +36,7 @@ import retrofit2.Response;
  */
 public class HomeFragment extends BaseFragment implements View.OnClickListener {
 
-    private  static final String TAG = HomeFragment.class.getName();
+    private static final String TAG = HomeFragment.class.getName();
     private RecyclerView mRecyclerView;
     private DashBoardAdapter adapter;
 
@@ -61,22 +62,22 @@ public class HomeFragment extends BaseFragment implements View.OnClickListener {
     }
 
 
-        @Override
-     protected void showVisits(List<Visit> visits) {
-            boolean inProgress=false;
-            if(visits.isEmpty()){
-                getCallback().visitInProgress(inProgress);
-                setupHeaderView();
-                return;
+    @Override
+    protected void showVisits(List<Visit> visits) {
+        boolean inProgress = false;
+        if (visits.isEmpty()) {
+            getCallback().visitInProgress(inProgress);
+            setupHeaderView();
+            return;
+        }
+
+
+        for (Visit visit : visits) {
+            if (TextUtils.isEmpty(visit.getCheckOut())) {
+                inProgress = true;
+                break;
             }
-
-
-        for (Visit visit : visits){
-                if(TextUtils.isEmpty(visit.getCheckOut())){
-                    inProgress=true;
-                    break;
-                }
-         }
+        }
         getCallback().visitInProgress(inProgress);
         setupDashboard(visits);
     }
@@ -86,9 +87,9 @@ public class HomeFragment extends BaseFragment implements View.OnClickListener {
         Collections.sort(visits, new Comparator<Visit>() {
             @Override
             public int compare(Visit f, Visit s) {
-                long fv =TextUtils.isEmpty(f.getCheckOut())?0:Util.getTime(f.getCheckOut());
-                long sv =TextUtils.isEmpty(s.getCheckOut())?0:Util.getTime(s.getCheckOut());
-               return Long.compare(fv,sv);
+                long fv = TextUtils.isEmpty(f.getCheckOut()) ? 0 : Util.getTime(f.getCheckOut());
+                long sv = TextUtils.isEmpty(s.getCheckOut()) ? 0 : Util.getTime(s.getCheckOut());
+                return Long.compare(fv, sv);
             }
         });
         HeaderDecoration headerDecoration = new HeaderDecoration(getActivity(), mRecyclerView, R.layout.list_header_home, visits.size());
@@ -97,7 +98,8 @@ public class HomeFragment extends BaseFragment implements View.OnClickListener {
         adapter.notifyDataSetChanged();
         adapter.setOnClickListener(this);
     }
-    private  void setupHeaderView(){
+
+    private void setupHeaderView() {
         getView().findViewById(R.id.header_layout).setVisibility(View.VISIBLE);
         TextView viewById = getView().findViewById(R.id.txtNoVisit);
         viewById.setText("0");
@@ -111,25 +113,27 @@ public class HomeFragment extends BaseFragment implements View.OnClickListener {
             @Override
             public void onResponse(Call<List<Visit>> call, Response<List<Visit>> response) {
                 try {
-                    if(response.isSuccessful()){
+                    // Toast.makeText(getContext(), ""+response.body(), Toast.LENGTH_SHORT).show();
+                    if (response.isSuccessful()) {
                         List<Visit> body = response.body();
                         showVisits(body);
 
-                    }else if(response.code()>=400 && response.code()<=403){
-                            getCallback().moveToLogin();
-                    }
-                    else if(response.errorBody()!=null){
-                        ErrorMessage errorMessage;
+                    } else if (response.code() >= 400 && response.code() <= 403) {
+                        getCallback().moveToLogin();
+                    } else if (response.errorBody() != null) {
+                        // Toast.makeText(getContext(), ""+response.errorBody().string(), Toast.LENGTH_SHORT).show();
+                       /* ErrorMessage errorMessage;
                         errorMessage = Util.getNetworkMapper().readValue(response.errorBody().string(),ErrorMessage.class);
-                        showDialog(errorMessage.getMessage());
+                        showDialog(errorMessage.getMessage());*/
                     }
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
+
             @Override
             public void onFailure(Call<List<Visit>> call, Throwable t) {
-                Log.d(TAG,"error while getting visit");
+                Log.d(TAG, "error while getting visit");
                 showNetWorkErrDialog();
             }
         });

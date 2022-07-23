@@ -81,6 +81,7 @@ public class BaseFragment extends Fragment implements FragmentCallback {
             @Override
             public void onResponse(Call<List<Visit>> call, Response<List<Visit>> response) {
                 try {
+
                     if(response.isSuccessful()){
                         List<Visit> body = response.body();
                         showVisits(body);

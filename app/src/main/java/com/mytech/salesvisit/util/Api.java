@@ -39,6 +39,9 @@ public interface Api {
     @POST(Constants.GET_CUSTOMER)
     Call<List<CustomerModel>> getCustomer(@Body JsonObject jsonObject);
 
+    @POST(Constants.GET_CUSTOMER_CHECKIN)
+    Call<List<CustomerModel>> getCustomerCheckIn(@Body JsonObject jsonObject);
+
     @GET(Constants.GET_GIVEN_BY)
     Call<List<ContactModel>> getGivenBY(@Path("usercode")int code);
 
@@ -79,6 +82,9 @@ public interface Api {
     @Multipart
     @POST("v1/attachments/upload?documentType=8")
     Call<String> uploadProductQualityImage(@Part MultipartBody.Part file, @Part("files") RequestBody items);
+
+    @GET(Constants.GET_VERSION_CODE)
+    Call<String> getVersionCode();
 
 
 

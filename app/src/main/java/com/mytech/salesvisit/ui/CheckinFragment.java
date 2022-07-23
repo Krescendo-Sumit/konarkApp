@@ -97,7 +97,6 @@ public class CheckinFragment extends BaseFragment implements View.OnClickListene
         api = new CheckinAPI(getContext(), this);
         selectedCompany=new Company();
 
-
         txt_customername.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -158,6 +157,7 @@ public class CheckinFragment extends BaseFragment implements View.OnClickListene
         });
 
 
+
         return inflate;
     }
 
@@ -169,7 +169,7 @@ public class CheckinFragment extends BaseFragment implements View.OnClickListene
             @Override
             public void onResponse(Call<List<Company>> call, Response<List<Company>> response) {
                try {
-                   if (response.isSuccessful()) {
+                    if (response.isSuccessful()) {
                      //  fillSpinner(response.body(),spinnerCompany);
                        fillTextview(response.body());
                    } else if (response.errorBody() != null) {
@@ -320,6 +320,18 @@ public class CheckinFragment extends BaseFragment implements View.OnClickListene
             {
                 Toast.makeText(getContext(), "Erro in Respo"+e.getMessage(), Toast.LENGTH_SHORT).show();
             }
+
+        }
+    }
+
+    @Override
+    public void onVersionResponse(String result) {
+        try{
+              Log.i("Result ",result);
+            Toast.makeText(getContext(), ""+result, Toast.LENGTH_SHORT).show();
+
+        }catch(Exception e)
+        {
 
         }
     }
