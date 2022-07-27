@@ -10,9 +10,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,6 +51,8 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
     String username;
     int usercode;
     String UserType="OO";
+    EditText et_search;
+    String StrCustomerName="";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +65,7 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
                 imageView_teamsorder=findViewById(R.id.img_teamorders);
         textView_myoorder=findViewById(R.id.txt_myorder);
                 textView_teamsorder=findViewById(R.id.txt_teamorders);
+        et_search=findViewById(R.id.et_search);
 
         mManager = new LinearLayoutManager(context);
         rc_orderdata.setLayoutManager(mManager);
@@ -81,18 +87,61 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
         orderDataAPI.getOrderData(jsonObject);*/
         try{
             page=1;
+            rc_orderdata.setAdapter(null);
             jsonObject=new JsonObject();
             jsonObject.addProperty("PageIndex", 1);
             jsonObject.addProperty("PageSize", 10);
             JsonObject json = new JsonObject();
             json.addProperty("CurrentUser", usercode);
             json.addProperty("UserType", UserType);
+            json.addProperty("CustomerName", StrCustomerName);
             jsonObject.add("EntityFilter", json);
             orderDataAPI.getOrderData(jsonObject);
         }catch (Exception e)
         {
-
+            Toast.makeText(context, "Error is "+e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+
+        et_search.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                try{
+                    String str=editable.toString();
+                    Log.i("Search String :",str);
+                    if(str.length()>3) {
+                        lst_OrderData=new ArrayList<>();
+                        rc_orderdata.setAdapter(null);
+                        StrCustomerName=str;
+                        page = 1;
+                        jsonObject = new JsonObject();
+                        jsonObject.addProperty("PageIndex", page);
+                        jsonObject.addProperty("PageSize", 10);
+                        JsonObject json = new JsonObject();
+                        json.addProperty("CurrentUser", usercode);
+                        json.addProperty("UserType", UserType);
+                        json.addProperty("CustomerName", StrCustomerName);
+                        jsonObject.add("EntityFilter", json);
+                        orderDataAPI.getOrderData(jsonObject);
+                    }
+                }catch (Exception e)
+                {
+                    Toast.makeText(context, "Error is "+e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                }
+            }
+        });
+
+
         rc_orderdata.setOnScrollListener(new RecyclerView.OnScrollListener() {
              @Override
              public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
@@ -110,6 +159,8 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
                      JsonObject json = new JsonObject();
                      json.addProperty("CurrentUser", usercode);
                      json.addProperty("UserType", UserType);
+                     json.addProperty("CustomerName", StrCustomerName);
+
                      jsonObject.add("EntityFilter", json);
                      orderDataAPI.getOrderData(jsonObject);
                      page+=1;
@@ -147,6 +198,8 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
         try{
             rc_orderdata.setAdapter(null);
             page=1;
+            StrCustomerName="";
+            et_search.setText("");
             jsonObject=new JsonObject();
             UserType="OO";
             jsonObject.addProperty("PageIndex", 1);
@@ -154,7 +207,9 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
             JsonObject json = new JsonObject();
             json.addProperty("CurrentUser", usercode);
             json.addProperty("UserType", UserType);
+            json.addProperty("CustomerName", StrCustomerName);
             jsonObject.add("EntityFilter", json);
+
             orderDataAPI.getOrderData(jsonObject);
         }catch (Exception e)
         {
@@ -169,11 +224,14 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
             rc_orderdata.setAdapter(null);
             jsonObject=new JsonObject();
             UserType="TO";
+            StrCustomerName="";
+            et_search.setText("");
             jsonObject.addProperty("PageIndex", 1);
             jsonObject.addProperty("PageSize", 10);
             JsonObject json = new JsonObject();
             json.addProperty("CurrentUser", usercode);
             json.addProperty("UserType", UserType);
+            json.addProperty("CustomerName", StrCustomerName);
             jsonObject.add("EntityFilter", json);
             orderDataAPI.getOrderData(jsonObject);
         }catch (Exception e)
@@ -209,7 +267,7 @@ public class OrderDataList extends AppCompatActivity implements OrderDataListene
             }
         }catch(Exception e)
         {
-
+            Toast.makeText(context, "Error is "+e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

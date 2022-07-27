@@ -633,20 +633,20 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
+                    android:orientation="horizontal"
+                    android:padding="3dp">
 
                     <com.toptoche.searchablespinnerlibrary.SearchableSpinner
                         android:id="@+id/sp_perticular"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
 
                     <EditText
                         android:id="@+id/et_describe"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:background="#FFFFFF"
                         android:ems="10"
                         android:hint="Enter Condition"
                         android:inputType="text"
@@ -655,9 +655,8 @@
 
                     <TextView
                         android:id="@+id/btn_add_terms"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:gravity="center"
                         android:text="Add"
                         android:textColor="@color/colorPrimary"

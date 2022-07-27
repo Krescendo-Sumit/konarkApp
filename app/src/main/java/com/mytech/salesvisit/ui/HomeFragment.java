@@ -125,6 +125,7 @@ public class HomeFragment extends BaseFragment implements View.OnClickListener {
                        /* ErrorMessage errorMessage;
                         errorMessage = Util.getNetworkMapper().readValue(response.errorBody().string(),ErrorMessage.class);
                         showDialog(errorMessage.getMessage());*/
+                        getCallback().moveToLogin();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

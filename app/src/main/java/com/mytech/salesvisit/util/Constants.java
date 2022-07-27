@@ -1,9 +1,10 @@
 package com.mytech.salesvisit.util;
 
 public class Constants {
- //UAT
+ //UAT Api Access
  // public static final String BASE_URL = "http://crm.konarkgroup.com:83/";
- // public static final String BASE_URL_upload = "http://crm.konarkgroup.com:82/uploads/";
+// UAT File Download
+  //public static final String BASE_URL_upload = "http://crm.konarkgroup.com:82/uploads/";
 
  //Live File Download
  public static final String BASE_URL_upload = "http://crm.konarkgroup.com/uploads/";

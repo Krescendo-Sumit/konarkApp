@@ -28,6 +28,7 @@ public class DbUtil {
             return true;
         }
         return false;
+
     }
 
     private static void saveRecord(AppDatabase db, Record record) {

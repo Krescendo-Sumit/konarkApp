@@ -28,6 +28,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.FileUtils;
 import android.os.StrictMode;
 import android.provider.DocumentsContract;
 import android.service.carrier.CarrierMessagingService;
@@ -82,6 +83,7 @@ import com.mytech.salesvisit.model.ProductModel;
 import com.mytech.salesvisit.model.TermConditionItems;
 import com.mytech.salesvisit.model.UOMMOdel;
 import com.mytech.salesvisit.util.Constants;
+import com.mytech.salesvisit.util.FileHelper;
 import com.mytech.salesvisit.util.MessageBox;
 import com.mytech.salesvisit.util.MultipartUtility;
 import com.mytech.salesvisit.util.PathUtil;
@@ -166,7 +168,7 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput, Cust
     String[] perticular = {"Select", "Delivery", "Payment", "Freight", "Price", "Taxes"};
 
 
-    String str_ordertypeid,
+    String  str_ordertypeid,
             str_customerid,
             str_givenbyid,
             str_followupid,
@@ -187,12 +189,9 @@ public class OrderCreate extends AppCompatActivity implements ResultOutput, Cust
             str_deliveryaddressid_name,
             str_billingaddressid_name,
             str_isthirdpartyid_name,
-
-
-    str_dispatchfrom_name,
+            str_dispatchfrom_name,
             str_saleperson_name,
-
-    str_ordercategoryid_name;
+            str_ordercategoryid_name;
 
     EditText et_deliveryDate, et_trasportnote, et_remark, et_otherproductname;
     int mYear, mMonth, mDay;
@@ -1169,13 +1168,13 @@ String upath="";
 
 
 
-//
-//                           intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-//                           intent.setType("*/*");
-//                           intent=Intent.createChooser(intent,"Choose Files");
-//                           intentActivityResultLauncher.launch(intent);
 
-                           Intent intent = new Intent(context, FilePickerActivity.class);
+                           intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                           intent.setType("*/*");
+                           intent=Intent.createChooser(intent,"Choose Files");
+                           intentActivityResultLauncher.launch(intent);
+
+                     /*      Intent intent = new Intent(context, FilePickerActivity.class);
                            intent.putExtra(FilePickerActivity.CONFIGS, new Configurations.Builder()
                                    .setCheckPermission(true)
                                    .setShowImages(true)
@@ -1187,7 +1186,7 @@ String upath="";
                                    .setSingleChoiceMode(true)
                                    .setSuffixes(new String[]{"doc", "docx", "pdf"})
                                    .build());
-                           startActivityForResult(intent, 2301);
+                           startActivityForResult(intent, 2301);*/
                         //   intentActivityResultLauncher.launch(intent);
                         //   startActivityForResult(intent, 7);
 
@@ -1211,34 +1210,41 @@ String upath="";
             new ActivityResultCallback<ActivityResult>() {
                 @Override
                 public void onActivityResult(ActivityResult result) {
-                    Toast.makeText(context, ""+(result.getResultCode()==RESULT_OK), Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(context, ""+(result.getResultCode()==RESULT_OK), Toast.LENGTH_SHORT).show();
                     if(result.getResultCode()==RESULT_OK)
                     {
                         try {
-                            Toast.makeText(context, ""+(result.getData()), Toast.LENGTH_SHORT).show();
-
+                      //      Toast.makeText(context, ""+(result.getData()), Toast.LENGTH_SHORT).show();
                             Intent data = result.getData();
                             Uri uri = data.getData();
-                            if (!Uri.EMPTY.equals(uri)) {
+                        //    Toast.makeText(context, ""+ FileHelper.getRealPathFromURI(context,uri), Toast.LENGTH_SHORT).show();
+                         if (!Uri.EMPTY.equals(uri)) {
                                 //handle followUri
-                                Toast.makeText(context, "URI is not EMpty", Toast.LENGTH_SHORT).show();
-                                String id = DocumentsContract.getDocumentId(uri);
-                                InputStream inputStream = getContentResolver().openInputStream(uri);
+//                                Toast.makeText(context, "URI is not EMpty", Toast.LENGTH_SHORT).show();
+//                                String id = DocumentsContract.getDocumentId(uri);
+////                                List<String> lst=new ArrayList<>();
+////                             DocumentsContract.Path path=new DocumentsContract.Path(DocumentsContract.getDocumentId(uri),lst);
+////                                Toast.makeText(context, "Hey :"+path.getPath().toString(), Toast.LENGTH_SHORT).show();
+////
+//                                InputStream inputStream = getContentResolver().openInputStream(uri);
+//
+//                                File file = new File(getCacheDir().getAbsolutePath()+"/"+id);
+//                                writeFile(inputStream, file);
+//                                String filePath = file.getPath();
+//                                Toast.makeText(context, file.getName()+"FilePath : " + filePath, Toast.LENGTH_SHORT).show();
 
-                                File file = new File(getCacheDir().getAbsolutePath()+"/"+id);
-                                writeFile(inputStream, file);
-                                String filePath = file.getPath();
-                                Toast.makeText(context, file.getName()+"FilePath : " + filePath, Toast.LENGTH_SHORT).show();
-
-
+                               String filePath=FileHelper.getRealPathFromURI(context,uri);
+                             file_path = filePath;
+                             txt_uploadedfilename.setText(filePath);
                                 Log.i("File path",filePath);
+                          dialog_fileOption.dismiss();
                             }
-                            String filePath = PathUtil.getPath(context, uri);
+                         //  String filePath = PathUtil.getPath(context, uri);
                         //    String filePath = "";
                         //    file_path = uri.getPath();
-                            file_path = filePath;
-                            txt_uploadedfilename.setText(filePath);
-                            Toast.makeText(context, "FilePath : " + filePath, Toast.LENGTH_SHORT).show();
+//                            file_path = filePath;
+//                            txt_uploadedfilename.setText(filePath);
+//                            Toast.makeText(context, "FilePath : " + filePath, Toast.LENGTH_SHORT).show();
                         }catch(Exception e)
                         {
                             Toast.makeText(context, "ERROR: "+e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -1248,6 +1254,7 @@ String upath="";
                 }
             }
     );
+    
     void writeFile(InputStream in, File file) {
         OutputStream out = null;
         try {
