@@ -20,11 +20,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".view.offlineorder.OfflineOrderSyncActivity" android:screenOrientation="portrait">
+        <activity android:name=".view.visit.CreateVisit" android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
 
         </activity>
+        <activity
+            android:name=".view.offlineorder.OfflineOrderSyncActivity"
+            android:screenOrientation="portrait"></activity>
         <activity android:name=".view.FileDownload" />
         <activity android:name=".view.vieworderdetails.ViewOrdeDetails" />
         <activity
@@ -66,12 +72,7 @@
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBar">
-            <intent-filter>
 
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-
-            </intent-filter>
         </activity>
 
         <provider
@@ -84,8 +85,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/picker_provider_paths" />
         </provider>
-
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -96,7 +95,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths1" />
         </provider>
-
     </application>
 
 </manifest>

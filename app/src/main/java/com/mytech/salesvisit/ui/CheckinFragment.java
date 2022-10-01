@@ -112,7 +112,7 @@ public class CheckinFragment extends BaseFragment implements View.OnClickListene
                         customer_JsonObject.addProperty("UserId", usercode);
                         customer_JsonObject.addProperty("CompanyId", "");
                         customer_JsonObject.addProperty("CustomerId", "");
-                        customer_JsonObject.addProperty("CustomerCategoryId", 2);
+                        customer_JsonObject.addProperty("CustomerCategoryId", 0);
                         customer_JsonObject.addProperty("QueryValue", "");
                         customer_JsonObject.addProperty("RowCount", 100);
                         customer_JsonObject.addProperty("IsActive", true);
@@ -137,7 +137,7 @@ public class CheckinFragment extends BaseFragment implements View.OnClickListene
                                 customer_JsonObject.addProperty("UserId", usercode);
                                 customer_JsonObject.addProperty("CompanyId", "");
                                 customer_JsonObject.addProperty("CustomerId", "");
-                                customer_JsonObject.addProperty("CustomerCategoryId", 2);
+                                customer_JsonObject.addProperty("CustomerCategoryId", 0);
                                 customer_JsonObject.addProperty("QueryValue", s.toString());
                                 customer_JsonObject.addProperty("RowCount", 100);
                                 customer_JsonObject.addProperty("IsActive", true);

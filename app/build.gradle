@@ -7,20 +7,28 @@ apply plugin: 'com.google.firebase.crashlytics'
 android {
     signingConfigs {
         release {
+            /*
             storeFile file('mytech.jks')
             storePassword 'mytech'
             keyAlias = 'mytech'
             keyPassword 'mytech'
+            */
+            storeFile file('konarknewupload.jkss')
+            storePassword 'Konark@123'
+            keyAlias = 'key0'
+            keyPassword 'Konark@123'
+
+
         }
     }
     compileSdkVersion 31
     buildToolsVersion "30.0.3"
     defaultConfig {
         applicationId "com.mytech.salesvisit"
-        minSdkVersion 26
+        minSdkVersion 21
         targetSdkVersion 30
-        versionCode 11
-        versionName "2.0.0.0"
+        versionCode 12
+        versionName "2.0.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {

@@ -5,12 +5,16 @@ import com.mytech.salesvisit.model.AddressModel;
 import com.mytech.salesvisit.model.ContactModel;
 import com.mytech.salesvisit.model.CustomerModel;
 import com.mytech.salesvisit.model.EmployeeModel;
+import com.mytech.salesvisit.model.MOMPerticularModel;
 import com.mytech.salesvisit.model.OrderCategoryModel;
 import com.mytech.salesvisit.model.OrderDataModel;
 import com.mytech.salesvisit.model.OrderDetailsModel;
 import com.mytech.salesvisit.model.OrderTypeModel;
 import com.mytech.salesvisit.model.ProductModel;
+import com.mytech.salesvisit.model.RemarkAboutModel;
+import com.mytech.salesvisit.model.RemarkDetailsModel;
 import com.mytech.salesvisit.model.UOMMOdel;
+import com.mytech.salesvisit.model.VisitModel;
 
 import org.json.JSONObject;
 
@@ -86,7 +90,23 @@ public interface Api {
     @GET(Constants.GET_VERSION_CODE)
     Call<String> getVersionCode();
 
+    @GET(Constants.GET_Companion_People)
+    Call<List<EmployeeModel>> getCompanionPeople();
 
+    @GET(Constants.GET_Companion_People)
+    Call<List<EmployeeModel>> getResponsiblePerson();
+
+    @GET(Constants.GET_VISIT_REASON)
+    Call<List<VisitModel>> getVisitReason();
+
+    @GET(Constants.GET_REMARKABOUT)
+    Call<List<RemarkAboutModel>> getRemarkAbout(@Path("RemarkAboutType")String RemarkAboutType);
+
+    @GET(Constants.GET_REMARK_DETAILS)
+    Call<List<RemarkDetailsModel>> getRemarkDetails(@Path("RemarkCategoryId")int RemarkCategoryId);
+
+    @GET(Constants.GET_MOM_PERTICULAR)
+    Call<List<MOMPerticularModel>> getMOMPerticular();
 
    /*
     @POST(Constants.SUB_COURSE_URL)
