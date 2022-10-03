@@ -17,6 +17,11 @@ public class EmployeeModel {
     }
     String text;
 
+    public String toString()
+    {
+        return text;
+    }
+
     /*int UserID;//": 1,
 
     public int getUserID() {

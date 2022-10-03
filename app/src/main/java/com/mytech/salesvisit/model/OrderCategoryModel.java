@@ -20,4 +20,8 @@ public class OrderCategoryModel {
     }
 
     String text;
+    public String toString()
+    {
+        return text;
+    }
 }

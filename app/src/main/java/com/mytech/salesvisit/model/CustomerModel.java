@@ -21,4 +21,10 @@ public class CustomerModel {
         }
 
         String text;
+
+
+    public String toString()
+    {
+        return text;
+    }
     }

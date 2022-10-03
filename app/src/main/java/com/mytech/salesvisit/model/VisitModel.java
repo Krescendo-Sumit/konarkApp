@@ -20,4 +20,18 @@ public class VisitModel {
     }
 
     String text;//": "Performance Evaluation"
+    public String toString()
+    {
+        return text;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    String value;
 }

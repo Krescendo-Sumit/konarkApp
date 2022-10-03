@@ -21,5 +21,10 @@ public class ContactModel {
         }
 
         String text;
+    public String toString()
+    {
+        return text;
+    }
+
 
 }

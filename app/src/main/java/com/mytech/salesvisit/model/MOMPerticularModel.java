@@ -15,4 +15,8 @@ public class MOMPerticularModel {
         this.text = text;
     }
     String text;
+    public String toString()
+    {
+        return text;
+    }
 }
