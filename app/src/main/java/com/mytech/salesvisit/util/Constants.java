@@ -28,6 +28,7 @@ public class Constants {
  public static final String GET_Companion_People ="v1/employee/list" ;
  public static final String GET_VISIT_REASON = "v1/visit/reason/list";
  public static final String GET_REMARKABOUT ="v1/visit/remark/category/list/{RemarkAboutType}" ;
-    public static final String GET_REMARK_DETAILS = "v1/visit/remark/details/list/{RemarkCategoryId}";
-    public static final String GET_MOM_PERTICULAR = "v1/visit/mom/particular/list";
+ public static final String GET_REMARK_DETAILS = "v1/visit/remark/details/list/{RemarkCategoryId}";
+ public static final String GET_MOM_PERTICULAR = "v1/visit/mom/particular/list";
+ public static final String VERFY_GEO_LOCATION = "v1/app/customer/verify/geo/location";
 }

@@ -92,7 +92,7 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
 
     }
 
-    void auth(){
+    void    auth(){
         if(textUserName.getText().toString().isEmpty()){
             textUserName.setError("Enter Username");
             return;

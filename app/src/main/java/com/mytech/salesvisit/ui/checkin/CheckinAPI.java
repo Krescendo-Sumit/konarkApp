@@ -120,4 +120,44 @@ Log.i("Error is",e.getMessage());
         }
     }
 
+    public void getUserLocationStatus(JsonObject jsonObject) {
+        try {
+
+          /*  if (!progressDialog.isShowing())
+                progressDialog.show();*/
+
+            Call<String> call = RetrofitClient.getInstance().getMyApi().getAllowChecking(jsonObject);
+            call.enqueue(new Callback<String>() {
+                @Override
+                public void onResponse(Call<String> call, Response<String> response) {
+
+                    if (progressDialog.isShowing())
+                        progressDialog.dismiss();
+
+
+                         try {
+                          //   Log.i("Response :: ",""+response.body());
+                            resultOutput.onUserLocationStatus(""+response.body().toString());
+                        } catch (NullPointerException e) {
+                            Log.e("Error is 1",""+e.getLocalizedMessage());
+                          //   Log.e("Error is 1",""+response.body());
+                            Toast.makeText(context, "Error is 1 " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            Toast.makeText(context, "Error is 2" + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+
+                }
+
+                @Override
+                public void onFailure(Call<String> call, Throwable t) {
+                    if (progressDialog.isShowing())
+                        progressDialog.dismiss();
+                    Log.e("Error is", t.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            Log.i("Error is",e.getMessage());
+        }
+    }
+
 }

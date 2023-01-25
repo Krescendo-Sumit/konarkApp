@@ -2,6 +2,7 @@ package com.mytech.salesvisit.util;
 
 import com.google.gson.JsonObject;
 import com.mytech.salesvisit.model.AddressModel;
+import com.mytech.salesvisit.model.CheckingLocationModel;
 import com.mytech.salesvisit.model.ContactModel;
 import com.mytech.salesvisit.model.CustomerModel;
 import com.mytech.salesvisit.model.EmployeeModel;
@@ -14,6 +15,7 @@ import com.mytech.salesvisit.model.ProductModel;
 import com.mytech.salesvisit.model.RemarkAboutModel;
 import com.mytech.salesvisit.model.RemarkDetailsModel;
 import com.mytech.salesvisit.model.UOMMOdel;
+import com.mytech.salesvisit.model.ValidateCheckin;
 import com.mytech.salesvisit.model.VisitModel;
 
 import org.json.JSONObject;
@@ -51,6 +53,9 @@ public interface Api {
 
     @GET(Constants.GET_ADDRESS)
     Call<List<AddressModel>> getAddress(@Path("usercode")int code);
+
+    @POST(Constants.VERFY_GEO_LOCATION)
+    Call<String> getAllowChecking(@Body JsonObject jsonObject);
 
     @GET(Constants.GET_SALES_PERSON)
     Call<List<EmployeeModel>> getSalesPerson();

@@ -11,4 +11,6 @@ public interface ResultOutput {
     public void onListResponce_Customer(List result);
 
     void onVersionResponse(String result);
+
+    void onUserLocationStatus(String result);
 }

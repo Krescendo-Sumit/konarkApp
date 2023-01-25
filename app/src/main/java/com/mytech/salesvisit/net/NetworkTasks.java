@@ -30,7 +30,7 @@ public class NetworkTasks {
 
     public void uploadRecords(){
         Log.i(TAG, "UploadRecords");
-        User user = db.userDao().getUser();
+        User user = db.userDao().getuser();
         if(AppConfig.TYPE.equalsIgnoreCase("debug")) {
             Log.d(TAG, "User  = " + (user!=null?user.getUserName():null));
         }

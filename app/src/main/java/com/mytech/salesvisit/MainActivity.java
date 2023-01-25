@@ -743,4 +743,9 @@ public class MainActivity extends AppCompatActivity
 
         }
         }
+
+    @Override
+    public void onUserLocationStatus(String result) {
+
+    }
 }
