@@ -1,9 +1,6 @@
 package com.mytech.salesvisit.model;
 
 public class ProductItems {
-    int ItemId;
-    int OrderId;
-
     public int getItemId() {
         return ItemId;
     }
@@ -52,11 +49,11 @@ public class ProductItems {
         Specification = specification;
     }
 
-    public int getQty() {
+    public float getQty() {
         return Qty;
     }
 
-    public void setQty(int qty) {
+    public void setQty(float qty) {
         Qty = qty;
     }
 
@@ -76,11 +73,11 @@ public class ProductItems {
         this.UOMName = UOMName;
     }
 
-    public int getRate() {
+    public float getRate() {
         return Rate;
     }
 
-    public void setRate(int rate) {
+    public void setRate(float rate) {
         Rate = rate;
     }
 
@@ -108,14 +105,18 @@ public class ProductItems {
         DispatchItemId = dispatchItemId;
     }
 
+    int ItemId;
+    int OrderId;
+
+
     int SrNo;
     int ProductId;
     String ProductName;
     String Specification;
-    int Qty;
+    float Qty;
     int UOMId;
     String UOMName;
-    int Rate;
+    float Rate;
     int StatusId;
     boolean IsRemoved;
     int DispatchItemId;

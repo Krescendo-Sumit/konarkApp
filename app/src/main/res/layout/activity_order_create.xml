@@ -536,7 +536,7 @@
                                 android:layout_weight="1"
                                 android:ems="10"
                                 android:hint="Qty"
-                                android:inputType="number"
+                                android:inputType="number|numberDecimal"
                                 android:text=""
                                 android:textSize="12sp" />
 
@@ -547,7 +547,7 @@
                                 android:layout_weight="1"
                                 android:ems="10"
                                 android:hint="Rate"
-                                android:inputType="number"
+                                android:inputType="number|numberDecimal"
                                 android:text=""
                                 android:textSize="12sp" />
 
@@ -565,7 +565,7 @@
                                 android:ems="10"
                                 android:enabled="false"
                                 android:hint="Total"
-                                android:inputType="number"
+                                android:inputType="number|numberDecimal"
                                 android:text=""
                                 android:textSize="12sp" />
 

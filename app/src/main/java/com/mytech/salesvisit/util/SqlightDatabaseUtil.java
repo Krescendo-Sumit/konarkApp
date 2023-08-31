@@ -264,7 +264,7 @@ public boolean clearTermsList(int id)
 
 				v[i].addElement(c.getInt(0)); //id
 				v[i].addElement(c.getString(1));//productid
-				v[i].addElement(c.getInt(2));
+				v[i].addElement(c.getFloat(2));
 				v[i].addElement(c.getString(3));
 				v[i].addElement(c.getString(4));
 				v[i].addElement(c.getString(5));

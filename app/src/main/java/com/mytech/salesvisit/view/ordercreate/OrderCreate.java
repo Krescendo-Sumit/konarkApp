@@ -825,13 +825,18 @@ String upath="";
                     str_rate = et_rate.getText().toString().trim();
                     str_tot_amt = et_tot_amt.getText().toString().trim();
                     str_specification = et_specification.getText().toString().trim();
+                    if (str_product == null || str_product.equals("")) {
+                        Toast.makeText(context, "Please choose product", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     if (str_product.trim().equals("0")) {
                         strproductname = et_otherproductname.getText().toString().trim();
                     }
-
                     if (str_product == null || str_product.equals("")) {
                         Toast.makeText(context, "Please choose product", Toast.LENGTH_SHORT).show();
-                    }/*else if(str_specification.equals(""))
+
+                    }
+                   /*else if(str_specification.equals(""))
                     {
                         et_specification.setError("Required");
                     }*/ else if (str_qty.equals("")) {
@@ -880,7 +885,6 @@ String upath="";
                         } else if (Condition.equals("")) {
                             et_discribe.setError("Required.");
                         } else {
-
                             if (sqlightDatabaseUtil.addTerms(TermId, SrNo, OrderId, ParticularId, Condition, IsRemoved, name)) {
                                 Toast.makeText(context, "Terms Added Successfully", Toast.LENGTH_SHORT).show();
                                 showTermsDetails();
@@ -888,7 +892,6 @@ String upath="";
                         }
                     } catch (Exception e) {
                         Toast.makeText(context, "Error " + e.getMessage(), Toast.LENGTH_SHORT).show();
-
                     }
                 }
             });
@@ -1067,10 +1070,10 @@ String upath="";
                     if (str_qty != null && !str_qty.isEmpty()) {
 
                         if (s.toString() != null && !s.toString().isEmpty()) {
-                            int qt = Integer.parseInt(str_qty.trim());
-                            int rate = Integer.parseInt(s.toString().trim());
+                            float qt = Float.parseFloat(str_qty.trim());
+                            float rate = Float.parseFloat(s.toString().trim());
 
-                            et_tot_amt.setText("" + (qt * rate));
+                            et_tot_amt.setText("" + String.format("%.2f",(qt * rate)));
                         }
                     }
                 }
@@ -1965,7 +1968,7 @@ String upath="";
             loadSpinners(action, null);
 
         } catch (Exception e) {
-
+             Log.i("Error pass1 ",e.getMessage());
         }
 
 
